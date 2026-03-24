@@ -24,6 +24,7 @@ esphome:
     - openamber/controllers/dhw_controller.h
     - openamber/controllers/openamber_component.h
     - openamber/controllers/heat_cool_controller.h
+    - openamber/languages/translations.h
   on_boot:
     then:
       - delay: 60s
