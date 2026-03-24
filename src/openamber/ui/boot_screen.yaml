@@ -28,7 +28,7 @@ obj:
           arc_width: 8
     - label:
         id: boot_subtitle
-        text: "${txt_boot_connecting_hp}"
+        text: !lambda 'return tr(id(active_language), LANG_BOOT_SUBTITLE);'
         text_font: font_value_big
         text_color: 0x1F2933
         align: BOTTOM_MID
