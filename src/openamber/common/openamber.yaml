@@ -33,6 +33,7 @@ esphome:
     - openamber/controllers/routine_controller.h
     - openamber/controllers/deaeration_routine.h
     - openamber/controllers/openamber_component.h
+    - openamber/tools/screenshot.h
   on_boot:
     - priority: 600
       then:
@@ -52,7 +53,15 @@ esphome:
               - switch.is_on: analytics_enabled_switch
             then:
               - mqtt.enable:
-
+    - priority: 200
+      then:
+        - lambda: |-
+            static ScreenshotHandler screenshot_handler;
+            if (esphome::web_server_base::global_web_server_base != nullptr) {
+              id(screenshot_status).publish_state("Handler registered OK");
+            } else {
+              id(screenshot_status).publish_state("ERROR: web_server_base is null");
+            }
 interval:
   - interval: 5min
     then:
