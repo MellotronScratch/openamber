@@ -133,3 +133,8 @@
   icon: "mdi:identifier"
   entity_category: diagnostic
   update_interval: never
+- platform: template
+  id: screenshot_status
+  name: "Screenshot Status"
+  entity_category: diagnostic
+  update_interval: never
