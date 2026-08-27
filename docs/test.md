@@ -6,26 +6,10 @@ xychart
     y-axis "Max. aanvoer (°C)" 40 --> 75
     line [50, 52, 55, 70, 70, 70, 70, 70, 70, 70, 55, 52, 50, 50, 50]
 
-flowchart LR
-    subgraph Extreme_Koud["< -15°C"]
-        direction TB
-        A["50°C aanvoer"]
-    end
-    
-    subgraph Transition_Koud["-15°C tot -10°C"]
-        B["50 → 55 → 70°C"]
-    end
-    
-    subgraph Optimum["-10°C tot 20°C"]
-        C["70°C (maximaal)"]
-    end
-    
-    subgraph Transition_Warm["20°C tot 25°C"]
-        D["70 → 55°C"]
-    end
-    
-    subgraph Extreme_Warm["> 25°C"]
-        E["55 → 50°C"]
-    end
-    
-    Extreme_Koud --> Transition_Koud --> Optimum --> Transition_Warm --> Extreme_Warm
+xychart-beta
+  title "An Example Chart"
+  x-axis ["90d", "60d", "30d", "7d", "1d", "Current"]
+  y-axis "Seconds" 0 --> 198.2
+  line "avg" [48.1, 41.5, 45.7, 72.8, 67.7, 59.9]
+  line "p50" [38.2, 36.8, 39.7, 54.5, 49.0, 38.4]
+  line "p95" [112.2, 75.3, 103.0, 177.0, 180.2, 109.4]
