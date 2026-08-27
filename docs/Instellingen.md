@@ -14,6 +14,8 @@
 
 #### Thermostaat
 
+<img src="images/screenshots/OpenAmber_Thermostaatjpg" alt="OpenAmber Thermostaat" width="500px"/>
+
 #### Grafiek
 
 #### Instellingen
@@ -403,6 +405,10 @@
 ### Service – Sensoren
 <img src="images/screenshots/OpenAmber_Service_Sensoren.jpg" alt="OpenAmber" width="500px"/>
 
+<table>
+
+<tr><td>
+
 #### Status
 
 | **Sensor** | **Waarde** |
@@ -411,7 +417,7 @@
 | Hoofdstatus | Heat/Cool |
 | CV/Koelen | Idle |
 | Tapwater | Idle |
-
+</td><td>
 
 #### Druk & Temperatuur
 
@@ -420,7 +426,9 @@
 | Ta / Tc |  |
 | Tuo / Tui |  |
 | Zuig / Pers |  |
-
+</td>
+</tr><tr>
+<td>
 
 #### Aansturing
 
@@ -430,6 +438,7 @@
 | Pomp PWM | 0 - 100% |
 | Fan RPM | 0 - 1000 |
 | Expansieklep | 0 - 200% |
+</td><td>
 
 #### Systeem
 
@@ -441,8 +450,11 @@
 | SG contacten A / B | UIT/AAN / UIT/AAN |
 | Warmte/koude vraag | UIT/AAN / UIT/AAN |
 
+</td></tr> </table>
+
 ### Service – Foutmeldingen
 <img src="images/screenshots/OpenAmber_Systeem_Foutmeldingen.jpg" alt="OpenAmber" width="500px"/>
+Zie 
 
 | **Status** | **Bericht** |
 | :-- | :-- |
@@ -471,3 +483,19 @@
 
 ### Systeem - Diagnostiek
 <img src="images/screenshots/OpenAmber_Systeem_Diagnostiek.jpg" alt="OpenAmber" width="500px"/>
+
+#### Runtime
+
+| **??** | **Waarde** |
+| :-- | :-- |
+| ESPHome |  |
+| Uptime |  |
+
+#### Geheugen
+
+| **??** | **Waarde** |
+| :-- | :-- |
+| Heap vrij |  |
+| Heap frag. |  |
+| Heap max |  |
+| PSRAM vrij |  |
