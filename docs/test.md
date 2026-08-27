@@ -25,3 +25,23 @@ xychart-beta
 | 25          | 55                |
 | 35          | 50                |
 | 45          | 50                |
+
+
+gantt
+    title Maximale aanvoertemperatuur (Tuo)
+    dateFormat X
+    axisFormat %s
+    
+    section Temp zone
+    50°C (extreme zones) :done, 0, 2
+    55°C (transition) :active, 2, 3
+    70°C (optimum) :crit, 3, 9
+    55°C (transition) :active, 9, 10
+    50°C (extreme zones) :done, 10, 14
+    
+    section Buitentemp
+    -25 tot -15 : 0, 2
+    -15 tot -10 : 2, 3
+    -10 tot 20 : 3, 9
+    20 tot 25 : 9, 10
+    25 tot 45 : 10, 14
