@@ -53,6 +53,7 @@ esphome:
               - switch.is_on: analytics_enabled_switch
             then:
               - mqtt.enable:
+<<<<<<< Updated upstream
     - priority: 200
       then:
         - lambda: |-
@@ -62,6 +63,9 @@ esphome:
             } else {
               id(screenshot_status).publish_state("ERROR: web_server_base is null");
             }
+=======
+
+>>>>>>> Stashed changes
 interval:
   - interval: 5min
     then:

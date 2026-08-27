@@ -2,6 +2,7 @@
 #include "esphome.h"
 #include <esp_heap_caps.h>
 #include <lvgl.h>
+<<<<<<< Updated upstream
 #include <ctime> // Required for the filename timestamp
 
 using namespace esphome::web_server_idf;
@@ -16,13 +17,61 @@ class ScreenshotHandler : public AsyncWebHandler {
     // Only respond to GET requests for /screenshot or /screenshot.bmp
     return request->method() == HTTP_GET &&
            (url == "/screenshot.bmp" || url == "/screenshot");
+=======
+#include <ctime>
+#include <inttypes.h>
+#include "esp_jpeg_enc.h"
+
+using namespace esphome::web_server_idf;
+
+static uint16_t *g_framebuffer = nullptr;
+static int32_t g_fb_width = 0;
+static int32_t g_fb_height = 0;
+
+void screenshot_capture_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const uint16_t *px_map) {
+  if (!g_framebuffer || !px_map) return;
+  int32_t src_w = x2 - x1 + 1;
+  for (int32_t y = y1; y <= y2; y++) {
+    if (y >= g_fb_height) continue;
+    for (int32_t x = x1; x <= x2; x++) {
+      if (x >= g_fb_width) continue;
+      g_framebuffer[y * g_fb_width + x] = px_map[(y - y1) * src_w + (x - x1)];
+    }
+  }
+}
+
+void screenshot_init(int32_t width, int32_t height) {
+  g_fb_width  = width;
+  g_fb_height = height;
+  size_t needed = (size_t)width * height * 2;
+  g_framebuffer = (uint16_t *) heap_caps_calloc(needed, 1, MALLOC_CAP_SPIRAM);
+  if (g_framebuffer) {
+    ESP_LOGI("screenshot", "Framebuffer allocated: %" PRId32 "x%" PRId32 " (%zu bytes), free PSRAM: %zu",
+             width, height, needed, heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+  } else {
+    ESP_LOGE("screenshot", "Framebuffer allocation failed! Free PSRAM: %zu",
+             heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+  }
+}
+
+class ScreenshotHandler : public AsyncWebHandler {
+ public:
+  bool canHandle(AsyncWebServerRequest *request) const override {
+    char buf[513];
+    auto url = request->url_to(buf);
+    return request->method() == HTTP_GET &&
+           (url == "/screenshot.jpg" || url == "/screenshot");
+>>>>>>> Stashed changes
   }
 
   void handleRequest(AsyncWebServerRequest *request) override {
     char buf[513];
     auto url = request->url_to(buf);
 
+<<<<<<< Updated upstream
     // PART 1: The HTML Interface (Preview page)
+=======
+>>>>>>> Stashed changes
     if (url == "/screenshot") {
       const char* html =
         "<html><head><meta name='viewport' content='width=device-width'>"
@@ -35,7 +84,11 @@ class ScreenshotHandler : public AsyncWebHandler {
         "button,a{display:inline-block;margin:0.5em;padding:0.5em 1.5em;background:#1976d2;"
         "color:white;text-decoration:none;border-radius:6px;border:none;font-size:1em;cursor:pointer;}"
         "button:active{background:#1256a0;}"
+<<<<<<< Updated upstream
         "#dl{background:#4CAF50; display:none;}" // Download button hidden by default
+=======
+        "#dl{background:#4CAF50;display:none;}"
+>>>>>>> Stashed changes
         "</style></head>"
         "<body>"
         "<h2>OpenAmber Preview</h2>"
@@ -50,6 +103,7 @@ class ScreenshotHandler : public AsyncWebHandler {
         "var img=document.getElementById('preview');"
         "var status=document.getElementById('status');"
         "var dl=document.getElementById('dl');"
+<<<<<<< Updated upstream
         "function refresh() {"
         "  status.textContent='Generating...';"
         "  var t=new Date();"
@@ -65,6 +119,23 @@ class ScreenshotHandler : public AsyncWebHandler {
         "    status.textContent='Error loading image, please try again.';"
         "  };"
         "  next.src='/screenshot.bmp?t='+t.getTime();" // Cache-busting parameter
+=======
+        "function refresh(){"
+        "  status.textContent='Generating...';"
+        "  var t=new Date();"
+        "  var next=new Image();"
+        "  next.onload=function(){"
+        "    img.src=next.src;"
+        "    img.style.display='block';"
+        "    dl.href=next.src;"
+        "    dl.style.display='inline-block';"
+        "    status.textContent='Screenshot from '+t.toLocaleTimeString();"
+        "  };"
+        "  next.onerror=function(){"
+        "    status.textContent='Error loading image, please try again.';"
+        "  };"
+        "  next.src='/screenshot.jpg?t='+t.getTime();"
+>>>>>>> Stashed changes
         "}"
         "</script>"
         "</body></html>";
@@ -72,6 +143,7 @@ class ScreenshotHandler : public AsyncWebHandler {
       return;
     }
 
+<<<<<<< Updated upstream
     // PART 2: Generating the BMP file
     lv_display_t *disp = lv_display_get_default();
     if (!disp) { request->send(500, "text/plain", "No display found"); return; }
@@ -157,3 +229,76 @@ class ScreenshotHandler : public AsyncWebHandler {
     heap_caps_free(bmp);
   }
 };
+=======
+    if (!g_framebuffer) {
+      request->send(503, "text/plain", "Framebuffer not initialized");
+      return;
+    }
+
+    // Configure JPEG encoder (esp_new_jpeg v1.0.0 API)
+    jpeg_enc_config_t enc_cfg = DEFAULT_JPEG_ENC_CONFIG();
+    enc_cfg.width       = g_fb_width;
+    enc_cfg.height      = g_fb_height;
+    enc_cfg.src_type    = JPEG_PIXEL_FORMAT_RGB565_LE;
+    enc_cfg.subsampling = JPEG_SUBSAMPLE_420;
+    enc_cfg.quality     = 80;
+    enc_cfg.task_enable = false;
+
+    jpeg_enc_handle_t enc_handle = NULL;
+    if (jpeg_enc_open(&enc_cfg, &enc_handle) != JPEG_ERR_OK) {
+      request->send(500, "text/plain", "JPEG encoder init failed");
+      return;
+    }
+
+    // Allocate output buffer (~300KB should be more than enough for quality 80)
+    size_t jpg_buf_size = 300 * 1024;
+    uint8_t *jpg_buf = (uint8_t *) heap_caps_malloc(jpg_buf_size, MALLOC_CAP_SPIRAM);
+    if (!jpg_buf) {
+      jpeg_enc_close(enc_handle);
+      request->send(503, "text/plain", "Not enough PSRAM for JPEG buffer");
+      return;
+    }
+
+    int out_len = 0;
+    jpeg_error_t err = jpeg_enc_process(enc_handle,
+                                        (uint8_t *) g_framebuffer,
+                                        (int)(g_fb_width * g_fb_height * 2),
+                                        jpg_buf,
+                                        (int)jpg_buf_size,
+                                        &out_len);
+    jpeg_enc_close(enc_handle);
+
+    if (err != JPEG_ERR_OK || out_len <= 0) {
+      heap_caps_free(jpg_buf);
+      request->send(500, "text/plain", "JPEG encoding failed");
+      return;
+    }
+
+    ESP_LOGI("screenshot", "JPEG encoded: %d bytes (%.1f KB)", out_len, out_len / 1024.0f);
+
+    time_t now = ::time(nullptr);
+    struct tm timeinfo;
+    localtime_r(&now, &timeinfo);
+    char filename[64];
+    strftime(filename, sizeof(filename), "OpenAmber_Screenshot_%Y%m%d%H%M.jpg", &timeinfo);
+    char header_content[128];
+    snprintf(header_content, sizeof(header_content), "attachment; filename=\"%s\"", filename);
+
+    auto *response = request->beginResponse(200, "image/jpeg", jpg_buf, out_len);
+    response->addHeader("Content-Disposition", header_content);
+    request->send(response);
+
+    heap_caps_free(jpg_buf);
+  }
+};
+
+inline void register_screenshot_handler() {
+  static ScreenshotHandler handler;
+  auto *base = esphome::web_server_base::global_web_server_base;
+  if (base == nullptr) { ESP_LOGE("screenshot", "web_server_base is null"); return; }
+  auto *server = base->get_server();
+  if (server == nullptr) { ESP_LOGE("screenshot", "AsyncWebServer is null"); return; }
+  server->addHandler(&handler);
+  ESP_LOGI("screenshot", "Screenshot handler registered");
+}
+>>>>>>> Stashed changes

@@ -28,6 +28,11 @@ esp32:
       CONFIG_NVS_ALLOCATE_CACHE_IN_SPIRAM: y
       CONFIG_SPIRAM_RODATA: y
       CONFIG_ESP_TASK_WDT_TIMEOUT_S: "60"
+<<<<<<< Updated upstream
+=======
+    components:
+      - espressif/esp_new_jpeg>=1.0.0
+>>>>>>> Stashed changes
     advanced:
       loop_task_stack_size: 10240
       execute_from_psram: true
@@ -36,6 +41,28 @@ esphome:
   project:
     version: dev
   on_boot:
+<<<<<<< Updated upstream
+=======
+    - priority: 200
+      then:
+        - lambda: |-
+            screenshot_init(1024, 600);
+            register_screenshot_handler();
+            id(screenshot_status).publish_state("Handler registered OK");
+            // Hook into LVGL flush to capture pixels
+            lv_display_t *disp = lv_display_get_default();
+            if (disp) {
+              lv_display_add_event_cb(disp, [](lv_event_t *e) {
+                lv_display_t *d = (lv_display_t *) lv_event_get_target(e);
+                lv_area_t *area = (lv_area_t *) lv_event_get_param(e);
+                lv_draw_buf_t *buf = lv_display_get_buf_active(d);
+                if (area && buf && buf->data) {
+                  screenshot_capture_flush(area->x1, area->y1, area->x2, area->y2,
+                    (const uint16_t *) buf->data);
+                }
+              }, LV_EVENT_FLUSH_START, nullptr);
+            }
+>>>>>>> Stashed changes
     - priority: -100
       then:
         - script.execute: update_firmware_ui
