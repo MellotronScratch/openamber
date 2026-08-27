@@ -6,7 +6,7 @@
 
 ### Hoofdmenu
 
-![](images/screenshots/OpenAmber_Home.jpg "OpenAmber Home")
+<img src="images/screenshots/OpenAmber_Home.jpg" alt="OpenAmber Home" width="500px"/>
 
 Algemeen | Thermostaat | Grafiek | Instellingen | Service | Systeem
 
@@ -27,8 +27,7 @@ Algemeen | Buitenunit | Pompen | 3-weg klep | Back-up | EEPROM | Sensoren | Fout
 Beheer | Diagnostiek
 
 ## Algemeen
-
-![](images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg "OpenAmber Systeem")
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg" alt="OpenAmber Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -36,7 +35,7 @@ Beheer | Diagnostiek
 | Regeltemperatuur bron | CV-aanvoer (Tc) / CV-aanvoer zone 1 (Tv1) | CV-aanvoer (Tc) | Kies de sensor die de regeling gebruikt |
 | Geavanceerde instellingen | Aan / Uit | Uit | Toon geavanceerde instellingen |
 
-![](images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg "OpenAmber Analytics")
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg" alt="OpenAmber Analytics" width="500px"/>
 
 ## Algemeen - Analytics
 
@@ -44,7 +43,8 @@ Beheer | Diagnostiek
 | :-: | :-: | :-: | :-: |
 | Analytics versturen | Aan / Uit | Uit | Deel anonieme gebruiksdata voor het OpenAmber dashboard |
 
-![](images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg "OpenAmber Sensor kalibratie")![](images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg "OpenAmber Sensor kalibratie")
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
 
 ## Algemeen - Sensor Kalibratie
 
