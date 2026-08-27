@@ -8,7 +8,9 @@
 
 <img src="images/screenshots/OpenAmber_Home.jpg" alt="OpenAmber Home" width="500px"/>
 
-Algemeen | Thermostaat | Grafiek | Instellingen | Service | Systeem
+[Home](#home) | [Thermostaat](#thermostaat) | Grafiek | [Instellingen](#instellingen) | [Service](#service) | [Systeem](#systeem)
+
+#### Home
 
 #### Thermostaat
 
@@ -16,17 +18,21 @@ Algemeen | Thermostaat | Grafiek | Instellingen | Service | Systeem
 
 #### Instellingen
 
-Algemeen | Thermostaat | Pomp | Verwarmen | Koelen | Tapwater | Bijverwarmen | SmartGrid | WiFi
+[Algemeen](#algemeen---systeem) | [Thermostaat](#thermostaat) | [Pomp](#pomp) | [Verwarmen](#verwarmen) | [Koelen](#koelen) | [Tapwater](#tapwater) | [Bijverwarmen](#bijverwarmen) | [SmartGrid](#smartgrid) | [WiFi](#wifi)
 
 #### Service
 
-Algemeen | Buitenunit | Pompen | 3-weg klep | Back-up | EEPROM | Sensoren | Foutmeldingen | Waarschuwingen
+[Algemeen](#service--algemeen) | [Buitenunit](#service--buitenunit-geavanceerd) | [Pompen](#service--pompen-geavanceerd) | [3-weg klep](#service--3-weg-klep-geavanceerd) | [Back-up](#service--back-up-geavanceerd) | [EEPROM](#service--eeprom) | [Sensoren](#service--sensoren) | [Foutmeldingen](#service--foutmeldingen) | [Waarschuwingen](#service--waarschuwingen)
 
 #### Systeem
 
-Beheer | Diagnostiek
+[Beheer](#systeem---beheer) | [Diagnostiek](#systeem---diagnostiek)
 
-## Algemeen
+## Instellingen
+
+### Algemeen
+
+#### Algemeen - Systeem
 <img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg" alt="OpenAmber Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -37,7 +43,7 @@ Beheer | Diagnostiek
 
 <img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg" alt="OpenAmber Analytics" width="500px"/>
 
-## Algemeen - Analytics
+### Algemeen - Analytics
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -46,7 +52,7 @@ Beheer | Diagnostiek
 <img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
 <img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
 
-## Algemeen - Sensor Kalibratie
+### Algemeen - Sensor Kalibratie
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -58,7 +64,7 @@ Beheer | Diagnostiek
 
 ![](images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg "OpenAmber Noodbedrijf")
 
-## Algemeen - Noodbedrijf
+### Algemeen - Noodbedrijf
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -67,7 +73,7 @@ Beheer | Diagnostiek
 ![](images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg "OpenAmber Opties")
 
 
-## Algemeen - Opties
+### Algemeen - Opties
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -75,9 +81,9 @@ Beheer | Diagnostiek
 | Flow sensor kalibratie | 1 t/m 1000 | 476 p/l | Aantal pulses per liter voor de flowsensor |
 
 
-## Thermostaat
+### Thermostaat
 
-### Thermostaat - Algemeen
+#### Thermostaat - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -86,7 +92,7 @@ Beheer | Diagnostiek
 | Standaard setpoint koelen | 18.0 t/m 30.0°C (stap 0.1) | 24.0°C | Setpoint koelen na herstart |
 
 
-### Thermostaat - Verwarmen
+#### Thermostaat - Verwarmen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -94,7 +100,7 @@ Beheer | Diagnostiek
 | Overrun verwarmen | 0.1 t/m 5.0°C (stap 0.1) | 0.2°C | Temperatuurverschil boven setpoint voor stoppen |
 
 
-### Thermostaat - Koelen
+#### Thermostaat - Koelen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -102,9 +108,9 @@ Beheer | Diagnostiek
 | Overrun koelen | 0.1 t/m 10.0°C (stap 0.1) | 3.0°C | Temperatuurverschil onder setpoint voor stoppen |
 
 
-## Pomp
+### Pomp
 
-### Pomp - Algemeen
+#### Pomp - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -114,7 +120,7 @@ Beheer | Diagnostiek
 | Flow switch uitvalvertraging | 0 t/m 10 min | 0 min | Stop bij geen flow na ingesteld aantal minuten |
 
 
-### Pomp - Pompsnelheid
+#### Pomp - Pompsnelheid
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -123,7 +129,7 @@ Beheer | Diagnostiek
 | Pompsnelheid tapwater | 0 t/m 100% | 100% | Pompsnelheid tijdens het verwarmen van tapwater |
 
 
-### Pomp - Dynamisch PWM P0
+#### Pomp - Dynamisch PWM P0
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -133,7 +139,7 @@ Beheer | Diagnostiek
 | Maximale pomp PWM | 20 t/m 100% | 100% | Bovengrens voor automatische P0-regeling |
 
 
-### Pomp - Vorstbeschermer
+#### Pomp - Vorstbeschermer
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -142,9 +148,9 @@ Beheer | Diagnostiek
 | Watertemperatuur 2e trap | 0.0 t/m 10.0°C (stap 0.1) | 7.0°C | Watertemperatuur waaronder trap 2 activeert |
 
 
-## Verwarmen
+### Verwarmen
 
-### Verwarmen – Algemeen
+#### Verwarmen – Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -153,7 +159,7 @@ Beheer | Diagnostiek
 | Verwarmen vermogen | Beperkt / Zeer laag / Laag / Gemiddeld / Verhoogd / Hoog / Maximaal | Maximaal | Max compressorvermogen bij verwarmen |
 
 
-### Verwarmen – Stooklijnen
+#### Verwarmen – Stooklijnen
 
 | **Buitentemperatuur** | **-10°C** | **0°C** | **+5°C** | **+10°C** | **+15°C** |
 | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -161,7 +167,7 @@ Beheer | Diagnostiek
 | Bereik | 15–45°C | 15–45°C | 15–45°C | 15–45°C | 15–45°C |
 
 
-### Verwarmen – Start/Stop
+#### Verwarmen – Start/Stop
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -169,7 +175,7 @@ Beheer | Diagnostiek
 | Stop delta | 0.1 t/m 10.0°C (stap 0.1) | 5.0°C | Verschil met setpoint om compressor te stoppen |
 
 
-### Verwarmen – PID (Geavanceerd)
+#### Verwarmen – PID (Geavanceerd)
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -179,9 +185,9 @@ Beheer | Diagnostiek
 | Deadband | 0.0 t/m 5.0°C (stap 0.1) | 1.0°C | Temperatuurzone waarbinnen PID inactief is |
 
 
-## Koelen
+### Koelen
 
-### Koelen – Algemeen
+#### Koelen – Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -190,7 +196,7 @@ Beheer | Diagnostiek
 | Stop delta | 0.1 t/m 10.0°C (stap 0.1) | 5.0°C | Verschil met setpoint om compressor te stoppen tijdens koelen |
 
 
-### Koelen – Setpoint
+#### Koelen – Setpoint
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -199,9 +205,9 @@ Beheer | Diagnostiek
 | Extern setpoint | - | 30°C | Koelsetpoint bij extern setpoint |
 
 
-## Tapwater
+### Tapwater
 
-### Tapwater - Algemeen
+#### Tapwater - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -211,7 +217,7 @@ Beheer | Diagnostiek
 | Tapwaterpomp startmodus | Aanvoer warmer dan vat (ΔT) / Samen met compressor | Aanvoer warmer dan vat (ΔT) | Wanneer de tapwaterpomp start |
 
 
-### Tapwater – Winter
+#### Tapwater – Winter
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -219,7 +225,7 @@ Beheer | Diagnostiek
 | Wintertemperatuurdrempel | -20 t/m 10°C | 5°C | Buitentemperatuur waaronder wintermodus actief |
 
 
-### Tapwater – Schema
+#### Tapwater – Schema
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -227,7 +233,7 @@ Beheer | Diagnostiek
 | Maandag t/m Zondag | Aan / Uit | Uit | Schema per dag in- of uitschakelen |
 
 
-### Tapwater - Legionella
+#### Tapwater - Legionella
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -236,9 +242,9 @@ Beheer | Diagnostiek
 | Legionella doeltemperatuur | 55 t/m 65°C | 60°C | Doeltemperatuur bij preventiecyclus |
 
 
-## Bijverwarmen
+### Bijverwarmen
 
-### Bijverwarmen – Algemeen
+#### Bijverwarmen – Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -246,14 +252,14 @@ Beheer | Diagnostiek
 | Boosttemperatuur voor backup bij ontdooien | -15 t/m 15°C | -3°C | Buitentemperatuur waaronder backup activeert bij ontdooien |
 
 
-### Bijverwarmen – Verwarmen
+#### Bijverwarmen – Verwarmen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
 | Backup °min drempel | 0 t/m 100 °C·min (stap 5) | 40 °C·min | Graadminuten drempel voor backup element tijdens verwarmen |
 
 
-### Bijverwarmen - Tapwater
+#### Bijverwarmen - Tapwater
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -261,7 +267,7 @@ Beheer | Diagnostiek
 | Backupvertraging | 0 t/m 60 min | 5 min | Tijd onder minimale verwarmsnelheid voordat backup inschakelt |
 
 
-### SmartGrid
+#### SmartGrid
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -269,13 +275,13 @@ Beheer | Diagnostiek
 | Tapwater boost | 0 t/m 25°C | 5°C | Extra temperatuur tapwater bij SG boost |
 
 
-### WiFi
+#### WiFi
 
-### Geavanceerd
+#### Geavanceerd
 
-### Geavanceerd - Verwarmen PID
+#### Geavanceerd - Verwarmen PID
 
-### Pomp - P0 PID (Geavanceerd)
+#### Pomp - P0 PID (Geavanceerd)
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -285,7 +291,7 @@ Beheer | Diagnostiek
 | PID deadband (+/-) |  | 1.0°C | Zone rond setpoint waarin PID-output minder wijzigt |
 
 
-### Geavanceerd - Koelen PID
+#### Geavanceerd - Koelen PID
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -295,7 +301,7 @@ Beheer | Diagnostiek
 | PID deadband (+/-) |  | 1.0°C | Zone rond setpoint waarin PID-output minder wijzigt |
 
 
-### Geavanceerd – Bodemplaat
+#### Geavanceerd – Bodemplaat
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -304,7 +310,7 @@ Beheer | Diagnostiek
 | Stop-hysterese bodemplaat |  | Fabriekswaarde | Hysterese voor uitschakelen bodemplaat |
 
 
-### Geavanceerd – Defrost
+#### Geavanceerd – Defrost
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -370,7 +376,7 @@ Beheer | Diagnostiek
 
 ### Service – Sensoren
 
-## Status
+#### Status
 
 | **Sensor** | **Waarde** |
 | :-: | :-: |
@@ -380,7 +386,7 @@ Beheer | Diagnostiek
 | Tapwater | Idle |
 
 
-## Druk & Temperatuur
+#### Druk & Temperatuur
 
 | **Sensor** | **Waardes** |
 | :-: | :-: |
@@ -389,7 +395,7 @@ Beheer | Diagnostiek
 | Zuig / Pers |  |
 
 
-## Aansturing
+#### Aansturing
 
 | **Sensor** | **Waardes** |
 | :-: | :-: |
@@ -399,7 +405,7 @@ Beheer | Diagnostiek
 | Expansieklep | 0 - 200% |
 
 
-## Systeem
+#### Systeem
 
 | **Sensor** | **Waarde** |
 | :-: | :-: |
@@ -423,8 +429,9 @@ Beheer | Diagnostiek
 | :-: | :-: |
 | Actieve waarschuwingen | "Geen actieve waarschuwingen" (standaard) |
 
+## Systeem
 
-## Beheer
+### Systeem - Beheer
 
 | **Instelling** | **Opties** | **Beschrijving** |
 | :-: | :-: | :-: |
@@ -434,4 +441,4 @@ Beheer | Diagnostiek
 | Herstarten | Button | Systeemherstart |
 | QR-code | Scan voor release info | Link naar release informatie |
 
-
+### Systeem - Diagnostiek
