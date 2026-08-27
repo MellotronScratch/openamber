@@ -49,8 +49,7 @@
 | :-: | :-: | :-: | :-: |
 | Analytics versturen | Aan / Uit | Uit | Deel anonieme gebruiksdata voor het OpenAmber dashboard |
 
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/><img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
 
 ### Algemeen - Sensor Kalibratie
 
@@ -62,7 +61,7 @@
 | CV-retourtemperatuur (Tui) offset | -5.0 t/m +5.0°C (stap 0.1) | 0.0°C | Correctie voor CV-retourtemperatuurmeting (Tui) |
 | CV-aanvoertemperatuur (Tuo) offset | -5.0 t/m +5.0°C (stap 0.1) | 0.0°C | Correctie voor CV-aanvoertemperatuurmeting (Tuo) |
 
-![](images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg "OpenAmber Noodbedrijf")
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg" alt="OpenAmber Noodbedrijf" width="500px"/>
 
 ### Algemeen - Noodbedrijf
 
@@ -70,8 +69,7 @@
 | :-: | :-: | :-: | :-: |
 | Noodbedrijf | Aan / Uit | Uit |  |
 
-![](images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg "OpenAmber Opties")
-
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg" alt="OpenAmber Opties" width="500px"/>
 
 ### Algemeen - Opties
 
@@ -83,6 +81,8 @@
 
 ### Thermostaat
 
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Algemeen.jpg" alt="OpenAmber Opties" width="500px"/>
+
 #### Thermostaat - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -91,6 +91,7 @@
 | Standaard setpoint verwarmen | 10.0 t/m 30.0°C (stap 0.1) | 20.5°C | Setpoint verwarmen na herstart |
 | Standaard setpoint koelen | 18.0 t/m 30.0°C (stap 0.1) | 24.0°C | Setpoint koelen na herstart |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Verwarmen.jpg" alt="OpenAmber Thermostaat verwarmen" width="500px"/>
 
 #### Thermostaat - Verwarmen
 
@@ -99,6 +100,7 @@
 | Deadband verwarmen | 0.1 t/m 5.0°C (stap 0.1) | 0.3°C | Temperatuurverschil onder setpoint voor verwarmen |
 | Overrun verwarmen | 0.1 t/m 5.0°C (stap 0.1) | 0.2°C | Temperatuurverschil boven setpoint voor stoppen |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Koelen.jpg" alt="OpenAmber Thermostaat Koelen" width="500px"/>
 
 #### Thermostaat - Koelen
 
