@@ -6,6 +6,8 @@
 
 ### Hoofdmenu
 
+![](images/screenshots/OpenAmber_Home.jpg "OpenAmber Home")
+
 Algemeen | Thermostaat | Grafiek | Instellingen | Service | Systeem
 
 #### Thermostaat
@@ -24,7 +26,9 @@ Algemeen | Buitenunit | Pompen | 3-weg klep | Back-up | EEPROM | Sensoren | Fout
 
 Beheer | Diagnostiek
 
-## Algemeen - Systeem
+## Algemeen
+
+![](images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg "OpenAmber Systeem")
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -32,6 +36,7 @@ Beheer | Diagnostiek
 | Regeltemperatuur bron | CV-aanvoer (Tc) / CV-aanvoer zone 1 (Tv1) | CV-aanvoer (Tc) | Kies de sensor die de regeling gebruikt |
 | Geavanceerde instellingen | Aan / Uit | Uit | Toon geavanceerde instellingen |
 
+![](images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg "OpenAmber Analytics")
 
 ## Algemeen - Analytics
 
@@ -39,6 +44,7 @@ Beheer | Diagnostiek
 | :-: | :-: | :-: | :-: |
 | Analytics versturen | Aan / Uit | Uit | Deel anonieme gebruiksdata voor het OpenAmber dashboard |
 
+![](images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg "OpenAmber Sensor kalibratie")![](images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg "OpenAmber Sensor kalibratie")
 
 ## Algemeen - Sensor Kalibratie
 
@@ -50,12 +56,15 @@ Beheer | Diagnostiek
 | CV-retourtemperatuur (Tui) offset | -5.0 t/m +5.0°C (stap 0.1) | 0.0°C | Correctie voor CV-retourtemperatuurmeting (Tui) |
 | CV-aanvoertemperatuur (Tuo) offset | -5.0 t/m +5.0°C (stap 0.1) | 0.0°C | Correctie voor CV-aanvoertemperatuurmeting (Tuo) |
 
+![](images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg "OpenAmber Noodbedrijf")
 
 ## Algemeen - Noodbedrijf
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
 | Noodbedrijf | Aan / Uit | Uit |  |
+
+![](images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg "OpenAmber Opties")
 
 
 ## Algemeen - Opties
@@ -365,6 +374,7 @@ Beheer | Diagnostiek
 
 | **Sensor** | **Waarde** |
 | :-: | :-: |
+| Status | Idle |
 | Hoofdstatus | Heat/Cool |
 | CV/Koelen | Idle |
 | Tapwater | Idle |
@@ -383,10 +393,10 @@ Beheer | Diagnostiek
 
 | **Sensor** | **Waardes** |
 | :-: | :-: |
-| Compressor | 0 - ?? Hz |
+| Compressor | 0 - 60 Hz |
 | Pomp PWM | 0 - 100% |
-| Fan RPM | 0 - ?? rpm |
-| Expansieklep | 0 - ??% |
+| Fan RPM | 0 - 1000 |
+| Expansieklep | 0 - 200% |
 
 
 ## Systeem
