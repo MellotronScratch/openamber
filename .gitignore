@@ -1,4 +1,4 @@
 src/.esphome/
 __pycache__/
 .vscode/
-docs/Instellingen.md
+.DS_Store

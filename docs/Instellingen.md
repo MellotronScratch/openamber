@@ -112,6 +112,8 @@
 
 ### Pomp
 
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Algemeen.jpg" alt="OpenAmber Pomp Algemeen" width="500px"/>
+
 #### Pomp - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -121,6 +123,7 @@
 | Pompduur | 2 t/m 10 min | 2 min | Draaitijd bij periodiek pompen |
 | Flow switch uitvalvertraging | 0 t/m 10 min | 0 min | Stop bij geen flow na ingesteld aantal minuten |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Pompsnelheid.jpg" alt="OpenAmber Pompsnelheid" width="500px"/>
 
 #### Pomp - Pompsnelheid
 
@@ -130,6 +133,7 @@
 | Pompsnelheid koelen | 0 t/m 100% | 100% | Pompsnelheid tijdens koelen |
 | Pompsnelheid tapwater | 0 t/m 100% | 100% | Pompsnelheid tijdens het verwarmen van tapwater |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Dynamisch-PWM-P0.jpg" alt="OpenAmber Dynamisch PWM P0" width="500px"/>
 
 #### Pomp - Dynamisch PWM P0
 
@@ -140,8 +144,9 @@
 | Minimale pomp PWM | 20 t/m 100% | 70% | Ondergrens voor automatische P0-regeling |
 | Maximale pomp PWM | 20 t/m 100% | 100% | Bovengrens voor automatische P0-regeling |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Vorstbescherming.jpg" alt="OpenAmber Vorstbescherming" width="500px"/>
 
-#### Pomp - Vorstbeschermer
+#### Pomp - Vorstbescherming
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-: | :-: | :-: | :-: |
@@ -152,6 +157,8 @@
 
 ### Verwarmen
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+
 #### Verwarmen – Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -160,6 +167,7 @@
 | Extern setpoint | 15 t/m 45°C | 30°C | CV-aanvoertemperatuur bij extern setpoint |
 | Verwarmen vermogen | Beperkt / Zeer laag / Laag / Gemiddeld / Verhoogd / Hoog / Maximaal | Maximaal | Max compressorvermogen bij verwarmen |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Stooklijn.jpg" alt="OpenAmber" width="500px"/>
 
 #### Verwarmen – Stooklijnen
 
@@ -168,6 +176,7 @@
 | CV-setpoint | 35°C | 30°C | 28°C | 27°C | 25°C |
 | Bereik | 15–45°C | 15–45°C | 15–45°C | 15–45°C | 15–45°C |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Start-Stop.jpg" alt="OpenAmber" width="500px"/>
 
 #### Verwarmen – Start/Stop
 
@@ -176,18 +185,9 @@
 | Start delta | 0.1 t/m 10.0°C (stap 0.1) | 3.0°C | Verschil met setpoint om compressor te starten |
 | Stop delta | 0.1 t/m 10.0°C (stap 0.1) | 5.0°C | Verschil met setpoint om compressor te stoppen |
 
-
-#### Verwarmen – PID (Geavanceerd)
-
-| **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
-| :-: | :-: | :-: | :-: |
-| Kp | 0.00 t/m 3.00 (stap 0.01) | 0.60 | Proportionele versterking |
-| Ki | 0.0000 t/m 0.0500 (stap 0.0001) | 0.0020 | Integrale versterking |
-| Kd | 0.00 t/m 25.00 (stap 0.01) | 0.70 | Differentiële versterking |
-| Deadband | 0.0 t/m 5.0°C (stap 0.1) | 1.0°C | Temperatuurzone waarbinnen PID inactief is |
-
-
 ### Koelen
+
+<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
 
 #### Koelen – Algemeen
 
@@ -197,6 +197,7 @@
 | Start delta | 0.1 t/m 10.0°C (stap 0.1) | 3.0°C | Verschil met setpoint om compressor te starten tijdens koelen |
 | Stop delta | 0.1 t/m 10.0°C (stap 0.1) | 5.0°C | Verschil met setpoint om compressor te stoppen tijdens koelen |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Setpoint.jpg" alt="OpenAmber" width="500px"/>
 
 #### Koelen – Setpoint
 
@@ -209,6 +210,8 @@
 
 ### Tapwater
 
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+
 #### Tapwater - Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -218,6 +221,7 @@
 | Basisvermogen | Beperkt / Zeer laag / Laag / Gemiddeld / Verhoogd / Hoog / Maximaal | Beperkt | Compressorvermogen in normale modus |
 | Tapwaterpomp startmodus | Aanvoer warmer dan vat (ΔT) / Samen met compressor | Aanvoer warmer dan vat (ΔT) | Wanneer de tapwaterpomp start |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Winter.jpg" alt="OpenAmber" width="500px"/>
 
 #### Tapwater – Winter
 
@@ -226,6 +230,7 @@
 | Wintervermogen | Gemiddeld / Verhoogd / Hoog / Maximaal | Gemiddeld | Max compressorvermogen in wintermodus |
 | Wintertemperatuurdrempel | -20 t/m 10°C | 5°C | Buitentemperatuur waaronder wintermodus actief |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Schema.jpg" alt="OpenAmber" width="500px"/>
 
 #### Tapwater – Schema
 
@@ -234,6 +239,7 @@
 | Tapwater schema | Aan / Uit | Uit | Verwarming alleen op geplande tijden |
 | Maandag t/m Zondag | Aan / Uit | Uit | Schema per dag in- of uitschakelen |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Legionella.jpg" alt="OpenAmber" width="500px"/>
 
 #### Tapwater - Legionella
 
@@ -246,6 +252,8 @@
 
 ### Bijverwarmen
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+
 #### Bijverwarmen – Algemeen
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
@@ -253,6 +261,7 @@
 | Backup element | Intern verwarmingselement / Externe backup verwarming | Intern verwarmingselement | Extern is voor hybride opstelling |
 | Boosttemperatuur voor backup bij ontdooien | -15 t/m 15°C | -3°C | Buitentemperatuur waaronder backup activeert bij ontdooien |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
 
 #### Bijverwarmen – Verwarmen
 
@@ -260,6 +269,7 @@
 | :-: | :-: | :-: | :-: |
 | Backup °min drempel | 0 t/m 100 °C·min (stap 5) | 40 °C·min | Graadminuten drempel voor backup element tijdens verwarmen |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
 
 #### Bijverwarmen - Tapwater
 
@@ -268,6 +278,7 @@
 | Min. verwarmingssnelheid | 0.00 t/m 5.00 °C/min (stap 0.01) | 0.12 °C/min | Minimale tapwaterverwarmsnelheid; lager schakelt backup in |
 | Backupvertraging | 0 t/m 60 min | 5 min | Tijd onder minimale verwarmsnelheid voordat backup inschakelt |
 
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
 
 #### SmartGrid
 
@@ -282,6 +293,17 @@
 #### Geavanceerd
 
 #### Geavanceerd - Verwarmen PID
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_PID.jpg" alt="OpenAmber" width="500px"/>
+
+#### Verwarmen – PID (Geavanceerd)
+
+| **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
+| :-: | :-: | :-: | :-: |
+| Kp | 0.00 t/m 3.00 (stap 0.01) | 0.60 | Proportionele versterking |
+| Ki | 0.0000 t/m 0.0500 (stap 0.0001) | 0.0020 | Integrale versterking |
+| Kd | 0.00 t/m 25.00 (stap 0.01) | 0.70 | Differentiële versterking |
+| Deadband | 0.0 t/m 5.0°C (stap 0.1) | 1.0°C | Temperatuurzone waarbinnen PID inactief is |
+
 
 #### Pomp - P0 PID (Geavanceerd)
 
