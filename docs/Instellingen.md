@@ -6,15 +6,13 @@
 
 ### Hoofdmenu
 
-<img src="images/screenshots/OpenAmber_Home.jpg" alt="OpenAmber Home" width="500px"/>
-
 [Home](#home) | [Thermostaat](#thermostaat) | Grafiek | [Instellingen](#instellingen) | [Service](#service) | [Systeem](#systeem)
 
 #### Home
 
 #### Thermostaat
 
-<img src="images/screenshots/OpenAmber_Thermostaatjpg" alt="OpenAmber Thermostaat" width="500px"/>
+<img src="images/screenshots/OpenAmber_Thermostaat.jpg" alt="OpenAmber Thermostaat" width="500px"/>
 
 #### Grafiek
 
@@ -30,12 +28,20 @@
 
 [Beheer](#systeem---beheer) | [Diagnostiek](#systeem---diagnostiek)
 
+## Home
+<img src="images/screenshots/OpenAmber_Home.jpg" alt="OpenAmber Home" width="500px"/>
+
+## Thermostaat
+<img src="images/screenshots/OpenAmber_Thermostaat.jpg" alt="OpenAmber Thermostaat" width="500px"/>
+
+## Grafiek
+
 ## Instellingen
 
 ### Algemeen
 
 #### Algemeen - Systeem
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg" alt="OpenAmber Algemeen" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Systeem.jpg" alt="Algemeen - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -45,7 +51,7 @@
 
 
 ### Algemeen - Analytics
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg" alt="OpenAmber Analytics" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Analytics.jpg" alt="Algemeen - Analytics" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -53,7 +59,7 @@
 
 
 ### Algemeen - Sensor Kalibratie
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/><img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="OpenAmber Sensor kalibratie" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-1.jpg" alt="Algemeen - Sensor kalibratie 1/2" width="500px"/><img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Sensor-kalibratie-2.jpg" alt="Algemeen - Sensor kalibratie 2/2" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -65,7 +71,7 @@
 
 
 ### Algemeen - Noodbedrijf
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg" alt="OpenAmber Noodbedrijf" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Noodbedrijf.jpg" alt="Algemeen - Noodbedrijf" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -73,7 +79,7 @@
 
 
 ### Algemeen - Opties
-<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg" alt="OpenAmber Opties" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Algemeen_Opties.jpg" alt="Algemeen - Opties" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -85,7 +91,7 @@
 
 
 #### Thermostaat - Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Algemeen.jpg" alt="OpenAmber Opties" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Algemeen.jpg" alt="Thermostaat - Opties" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -95,7 +101,7 @@
 
 
 #### Thermostaat - Verwarmen
-<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Verwarmen.jpg" alt="OpenAmber Thermostaat verwarmen" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Verwarmen.jpg" alt="Thermostaat - Thermostaat verwarmen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -104,7 +110,7 @@
 
 
 #### Thermostaat - Koelen
-<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Koelen.jpg" alt="OpenAmber Thermostaat Koelen" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Thermostaat_Koelen.jpg" alt="Thermostaat - Thermostaat Koelen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -114,7 +120,7 @@
 ### Pomp
 
 #### Pomp - Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Algemeen.jpg" alt="OpenAmber Pomp Algemeen" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Algemeen.jpg" alt="Pomp - Pomp Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -125,7 +131,7 @@
 
 
 #### Pomp - Pompsnelheid
-<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Pompsnelheid.jpg" alt="OpenAmber Pompsnelheid" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Pompsnelheid.jpg" alt="Pomp - Pompsnelheid" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -135,7 +141,7 @@
 
 
 #### Pomp - Dynamisch PWM P0
-<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Dynamisch-PWM-P0.jpg" alt="OpenAmber Dynamisch PWM P0" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Dynamisch-PWM-P0.jpg" alt="Pomp - Dynamisch PWM P0" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -146,7 +152,7 @@
 
 
 #### Pomp - Vorstbescherming
-<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Vorstbescherming.jpg" alt="OpenAmber Vorstbescherming" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Pomp_Vorstbescherming.jpg" alt="Pomp - Vorstbescherming" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -157,7 +163,7 @@
 ### Verwarmen
 
 #### Verwarmen – Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Algemeen.jpg" alt="Verwarmen - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -166,8 +172,8 @@
 | Verwarmen vermogen | Beperkt / Zeer laag / Laag / Gemiddeld / Verhoogd / Hoog / Maximaal | Maximaal | Max compressorvermogen bij verwarmen |
 
 
-#### Verwarmen – Stooklijnen
-<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Stooklijn.jpg" alt="OpenAmber" width="500px"/>
+#### Verwarmen – Stooklijn
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Stooklijn.jpg" alt="Verwarmen - Stooklijn" width="500px"/>
 
 | **Buitentemperatuur** | **-10°C** | **0°C** | **+5°C** | **+10°C** | **+15°C** |
 | :-: | :-: | :-: | :-: | :-: | :-: |
@@ -176,7 +182,7 @@
 
 
 #### Verwarmen – Start/Stop
-<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Start-Stop.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Verwarmen_Start-Stop.jpg" alt="Verwarmen - Start/Stop" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -187,7 +193,7 @@
 
 
 #### Koelen – Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Algemeen.jpg" alt="Koelen - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -197,7 +203,7 @@
 
 
 #### Koelen – Setpoint
-<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Setpoint.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Koelen_Setpoint.jpg" alt="Koelen - Setpoint" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -208,7 +214,7 @@
 ### Tapwater
 
 #### Tapwater - Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Algemeen.jpg" alt="Tapwater - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -219,7 +225,7 @@
 
 
 #### Tapwater – Winter
-<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Winter.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Winter.jpg" alt="Tapwater - Winter" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -228,7 +234,7 @@
 
 
 #### Tapwater – Schema
-<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Schema.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Schema.jpg" alt="Tapwater - Schema" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -237,7 +243,7 @@
 
 
 #### Tapwater - Legionella
-<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Legionella.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Tapwater_Legionella.jpg" alt="Tapwater - Legionella" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -249,7 +255,7 @@
 ### Bijverwarmen
 
 #### Bijverwarmen – Algemeen
-<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Algemeen.jpg" alt="Bijverwarmen - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -258,7 +264,7 @@
 
 
 #### Bijverwarmen – Verwarmen
-<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Verwarmen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Verwarmen.jpg" alt="Bijverwarmen - Verwarmen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -266,7 +272,7 @@
 
 
 #### Bijverwarmen - Tapwater
-<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Tapwater.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_Tapwater.jpg" alt="Bijverwarmen - Tapwater" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -275,7 +281,7 @@
 
 
 #### SmartGrid
-<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_SmartGrid.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Bijverwarmen_SmartGrid.jpg" alt="SmartGrid" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -284,23 +290,12 @@
 
 
 #### WiFi
-<img src="images/screenshots/OpenAmber_Instellingen_WiFi.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_WiFi.jpg" alt="WiFi" width="500px"/>
 
 #### Geavanceerd
 
 #### Geavanceerd - Verwarmen PID
-<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Verwarmen-PID.jpg" alt="OpenAmber" width="500px"/>
-
-| **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
-| :-- | :-- | :-- | :-- |
-| Kp | 0.00 t/m 3.00 (stap 0.01) | 0.60 | Proportionele versterking |
-| Ki | 0.0000 t/m 0.0500 (stap 0.0001) | 0.0020 | Integrale versterking |
-| Kd | 0.00 t/m 25.00 (stap 0.01) | 0.70 | Differentiële versterking |
-| Deadband | 0.0 t/m 5.0°C (stap 0.1) | 1.0°C | Temperatuurzone waarbinnen PID inactief is |
-
-
-#### Pomp - P0 PID (Geavanceerd)
-<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Verwarmen-PID.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Verwarmen-PID.jpg" alt="Geavanceerd - Verwarmen PID" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -311,7 +306,7 @@
 
 
 #### Geavanceerd - Koelen PID
-<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Koelen-PID.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Koelen-PID.jpg" alt="Geavanceeerd - Koelen PID" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -322,7 +317,7 @@
 
 
 #### Geavanceerd – Bodemplaat
-<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Bodemplaat.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Bodemplaat.jpg" alt="Geavanceerd - Bodemplaat" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -332,7 +327,7 @@
 
 
 #### Geavanceerd – Defrost
-<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Defrost_1-2.jpg" alt="OpenAmber" width="500px"/><img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Defrost_2-2.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Defrost_1-2.jpg" alt="Geavanceerd - Defrost 1/2" width="500px"/><img src="images/screenshots/OpenAmber_Instellingen_Geavanceerd_Defrost_2-2.jpg" alt="Geavanceerd - Defrost 2/2" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -347,7 +342,7 @@
 ## Service
 
 ### Service – Algemeen
-<img src="images/screenshots/OpenAmber_Service_Algemeen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Service_Algemeen.jpg" alt="Service - Algemeen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -355,8 +350,8 @@
 | Ontluchten | Kort (~10 min) / Uitgebreid (~31 min) | Inactief | Automatische ontluchtingsroutine |
 
 
-### Service – Buitenunit (Geavanceerd)
-<img src="images/screenshots/OpenAmber_Service_Buitenunit.jpg" alt="OpenAmber" width="500px"/>
+### Service – Buitenunit (Onderhoudsmodus)
+<img src="images/screenshots/OpenAmber_Service_Buitenunit.jpg" alt="Service - Buitenunit" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -365,8 +360,8 @@
 | Bodemplaat verwarming | Aan / Uit | Uit | Schakelt bodemplaatverwarming |
 
 
-### Service – Pompen (Geavanceerd)
-<img src="images/screenshots/OpenAmber_Service_Pompen.jpg" alt="OpenAmber" width="500px"/>
+### Service – Pompen (Onderhoudsmodus)
+<img src="images/screenshots/OpenAmber_Service_Pompen.jpg" alt="Service - Pompen" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -377,16 +372,16 @@
 | SWW pomp relais | Aan / Uit | Uit | Schakel SWW pomp relais |
 
 
-### Service – 3-weg klep (Geavanceerd)
-<img src="images/screenshots/OpenAmber_Service_3-weg-klep.jpg" alt="OpenAmber" width="500px"/>
+### Service – 3-weg klep (Onderhoudsmodus)
+<img src="images/screenshots/OpenAmber_Service_3-weg-klep.jpg" alt="Service - 3-weg klep" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
 | Klepstand forceren | CV/Koelen / Tapwater | CV/Koelen | Forceer de 3-weg klep tijdelijk naar CV/Koelen of Tapwater |
 
 
-### Service – Back-up (Geavanceerd)
-<img src="images/screenshots/OpenAmber_Service_Back-up.jpg" alt="OpenAmber" width="500px"/>
+### Service – Back-up (Onderhoudsmodus)
+<img src="images/screenshots/OpenAmber_Service_Back-up.jpg" alt="Service - Backup" width="500px"/>
 
 | **Instelling** | **Opties** | **Standaard** | **Beschrijving** |
 | :-- | :-- | :-- | :-- |
@@ -395,7 +390,7 @@
 
 
 ### Service – EEPROM
-<img src="images/screenshots/OpenAmber_Service_EEPROM.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Service_EEPROM.jpg" alt="Service - EEPROM" width="500px"/>
 
 | **Instelling** | **Beschrijving** | **Type** |
 | :-- | :-- | :-- |
@@ -403,7 +398,7 @@
 
 
 ### Service – Sensoren
-<img src="images/screenshots/OpenAmber_Service_Sensoren.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Service_Sensoren.jpg" alt="Service - Sensoren" width="500px"/>
 
 <table>
 
@@ -453,7 +448,7 @@
 </td></tr> </table>
 
 ### Service – Foutmeldingen
-<img src="images/screenshots/OpenAmber_Systeem_Foutmeldingen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Systeem_Foutmeldingen.jpg" alt="Service - Foutmeldingen" width="500px"/>
 Zie 
 
 | **Status** | **Bericht** |
@@ -462,7 +457,7 @@ Zie
 
 
 ### Service – Waarschuwingen
-<img src="images/screenshots/OpenAmber_Waarschuwingen.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Waarschuwingen.jpg" alt="Service - Waarschuwingen" width="500px"/>
 
 | **Status** | **Bericht** |
 | :-- | :-- |
@@ -471,7 +466,7 @@ Zie
 ## Systeem
 
 ### Systeem - Beheer
-<img src="images/screenshots/OpenAmber_Systeem_Beheer.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Systeem_Beheer.jpg" alt="Systeem - Beheer" width="500px"/>
 
 | **Instelling** | **Opties** | **Beschrijving** |
 | :-- | :-- | :-- |
@@ -482,7 +477,7 @@ Zie
 | QR-code | Scan voor release info | Link naar release informatie |
 
 ### Systeem - Diagnostiek
-<img src="images/screenshots/OpenAmber_Systeem_Diagnostiek.jpg" alt="OpenAmber" width="500px"/>
+<img src="images/screenshots/OpenAmber_Systeem_Diagnostiek.jpg" alt="Systeem - Diagnostiek" width="500px"/>
 
 #### Runtime
 
