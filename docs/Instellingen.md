@@ -12,9 +12,11 @@
 
 #### Thermostaat
 
-<img src="images/screenshots/OpenAmber_Thermostaat.jpg" alt="OpenAmber Thermostaat" width="500px"/>
+[Thermostaat](#thermostaat-1)
 
-#### Grafiek
+#### ~~Grafiek~~
+
+Deze functie is nog niet actief
 
 #### Instellingen
 
@@ -34,7 +36,9 @@
 ## Thermostaat
 <img src="images/screenshots/OpenAmber_Thermostaat.jpg" alt="OpenAmber Thermostaat" width="500px"/>
 
-## Grafiek
+## ~~Grafiek~~
+
+Deze functie is nog niet actief
 
 ## Instellingen
 
