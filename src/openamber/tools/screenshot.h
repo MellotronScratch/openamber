@@ -1,34 +1,56 @@
+/**
+ * @file screenshot.h
+ * @brief Screenshot handler voor OpenAmber — serveert een live JPEG afbeelding
+ *        van het LVGL display via HTTP.
+ *
+ * Gebruik:
+ *   - GET /screenshot      → HTML preview pagina met knop om screenshot te maken
+ *   - GET /screenshot.jpg  → JPEG afbeelding van het huidige scherm
+ *
+ * Werking:
+ *   De LVGL flush callback stuurt elke gerenderde tegel door naar een globale
+ *   framebuffer in PSRAM. Bij een HTTP-verzoek wordt die buffer via de
+ *   esp_new_jpeg encoder gecomprimeerd en als JPEG teruggestuurd.
+ *
+ * Vereisten:
+ *   - esp_new_jpeg >= 1.0.0 (via idf_component.yml of ESPHome components)
+ *   - PSRAM aanwezig (minimaal ~1.5 MB vrij voor framebuffer + JPEG buffer)
+ *   - Aanroep van screenshot_init() en register_screenshot_handler() bij boot
+ *   - Aanroep van screenshot_capture_flush() vanuit de LVGL flush event callback
+ */
+
 #pragma once
 #include "esphome.h"
 #include <esp_heap_caps.h>
 #include <lvgl.h>
-<<<<<<< Updated upstream
-#include <ctime> // Required for the filename timestamp
-
-using namespace esphome::web_server_idf;
-
-// This class handles web requests to capture and serve a screenshot
-class ScreenshotHandler : public AsyncWebHandler {
- public:
-  // canHandle determines if this script should respond to a specific URL request
-  bool canHandle(AsyncWebServerRequest *request) const override {
-    char buf[513];
-    auto url = request->url_to(buf);
-    // Only respond to GET requests for /screenshot or /screenshot.bmp
-    return request->method() == HTTP_GET &&
-           (url == "/screenshot.bmp" || url == "/screenshot");
-=======
 #include <ctime>
 #include <inttypes.h>
 #include "esp_jpeg_enc.h"
 
 using namespace esphome::web_server_idf;
 
+// ---------------------------------------------------------------------------
+// Globale framebuffer — gevuld door screenshot_capture_flush()
+// Formaat: RGB565, 2 bytes per pixel, volledige schermresolutie
+// ---------------------------------------------------------------------------
 static uint16_t *g_framebuffer = nullptr;
-static int32_t g_fb_width = 0;
-static int32_t g_fb_height = 0;
+static int32_t   g_fb_width    = 0;
+static int32_t   g_fb_height   = 0;
 
-void screenshot_capture_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const uint16_t *px_map) {
+/**
+ * @brief Kopieert een LVGL render-tegel naar de globale framebuffer.
+ *
+ * Aanroepen vanuit de LVGL LV_EVENT_FLUSH_START callback, zodat de
+ * framebuffer altijd de meest recente scherminhoud bevat.
+ *
+ * @param x1     Linkerkolom van de tegel
+ * @param y1     Bovenste rij van de tegel
+ * @param x2     Rechterkolom van de tegel (inclusief)
+ * @param y2     Onderste rij van de tegel (inclusief)
+ * @param px_map RGB565 pixeldata van de tegel
+ */
+void screenshot_capture_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2,
+                               const uint16_t *px_map) {
   if (!g_framebuffer || !px_map) return;
   int32_t src_w = x2 - x1 + 1;
   for (int32_t y = y1; y <= y2; y++) {
@@ -40,13 +62,23 @@ void screenshot_capture_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, co
   }
 }
 
+/**
+ * @brief Alloceert de globale framebuffer in PSRAM.
+ *
+ * Aanroepen bij boot, vóór register_screenshot_handler().
+ * De buffer heeft width * height * 2 bytes nodig (RGB565).
+ *
+ * @param width  Horizontale schermresolutie in pixels
+ * @param height Verticale schermresolutie in pixels
+ */
 void screenshot_init(int32_t width, int32_t height) {
   g_fb_width  = width;
   g_fb_height = height;
   size_t needed = (size_t)width * height * 2;
   g_framebuffer = (uint16_t *) heap_caps_calloc(needed, 1, MALLOC_CAP_SPIRAM);
   if (g_framebuffer) {
-    ESP_LOGI("screenshot", "Framebuffer allocated: %" PRId32 "x%" PRId32 " (%zu bytes), free PSRAM: %zu",
+    ESP_LOGI("screenshot", "Framebuffer allocated: %" PRId32 "x%" PRId32
+             " (%zu bytes), free PSRAM: %zu",
              width, height, needed, heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
   } else {
     ESP_LOGE("screenshot", "Framebuffer allocation failed! Free PSRAM: %zu",
@@ -54,24 +86,41 @@ void screenshot_init(int32_t width, int32_t height) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// HTTP handler
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief AsyncWebHandler die /screenshot en /screenshot.jpg afhandelt.
+ *
+ * Registreer via register_screenshot_handler() — niet direct instantiëren.
+ */
 class ScreenshotHandler : public AsyncWebHandler {
  public:
+
+  /**
+   * @brief Bepaalt of deze handler het verzoek afhandelt.
+   *
+   * Reageert uitsluitend op GET-verzoeken naar /screenshot of /screenshot.jpg.
+   */
   bool canHandle(AsyncWebServerRequest *request) const override {
     char buf[513];
     auto url = request->url_to(buf);
     return request->method() == HTTP_GET &&
            (url == "/screenshot.jpg" || url == "/screenshot");
->>>>>>> Stashed changes
   }
 
+  /**
+   * @brief Verwerkt het HTTP-verzoek.
+   *
+   * /screenshot      → stuurt een HTML-pagina met preview en downloadknop.
+   * /screenshot.jpg  → codeert de framebuffer als JPEG en stuurt die terug.
+   */
   void handleRequest(AsyncWebServerRequest *request) override {
     char buf[513];
     auto url = request->url_to(buf);
 
-<<<<<<< Updated upstream
-    // PART 1: The HTML Interface (Preview page)
-=======
->>>>>>> Stashed changes
+    // --- HTML preview pagina ---
     if (url == "/screenshot") {
       const char* html =
         "<html><head><meta name='viewport' content='width=device-width'>"
@@ -84,11 +133,7 @@ class ScreenshotHandler : public AsyncWebHandler {
         "button,a{display:inline-block;margin:0.5em;padding:0.5em 1.5em;background:#1976d2;"
         "color:white;text-decoration:none;border-radius:6px;border:none;font-size:1em;cursor:pointer;}"
         "button:active{background:#1256a0;}"
-<<<<<<< Updated upstream
-        "#dl{background:#4CAF50; display:none;}" // Download button hidden by default
-=======
         "#dl{background:#4CAF50;display:none;}"
->>>>>>> Stashed changes
         "</style></head>"
         "<body>"
         "<h2>OpenAmber Preview</h2>"
@@ -103,23 +148,6 @@ class ScreenshotHandler : public AsyncWebHandler {
         "var img=document.getElementById('preview');"
         "var status=document.getElementById('status');"
         "var dl=document.getElementById('dl');"
-<<<<<<< Updated upstream
-        "function refresh() {"
-        "  status.textContent='Generating...';"
-        "  var t=new Date();"
-        "  var next=new Image();"
-        "  next.onload=function() {"
-        "    img.src=next.src;"
-        "    img.style.display='block';"
-        "    dl.href=next.src;" // Update the download link to the new image
-        "    dl.style.display='inline-block';" // Show the download button
-        "    status.textContent='Screenshot from '+t.toLocaleTimeString();"
-        "  };"
-        "  next.onerror=function() {"
-        "    status.textContent='Error loading image, please try again.';"
-        "  };"
-        "  next.src='/screenshot.bmp?t='+t.getTime();" // Cache-busting parameter
-=======
         "function refresh(){"
         "  status.textContent='Generating...';"
         "  var t=new Date();"
@@ -134,8 +162,7 @@ class ScreenshotHandler : public AsyncWebHandler {
         "  next.onerror=function(){"
         "    status.textContent='Error loading image, please try again.';"
         "  };"
-        "  next.src='/screenshot.jpg?t='+t.getTime();"
->>>>>>> Stashed changes
+        "  next.src='/screenshot.jpg?t='+t.getTime();" // Cache-busting via timestamp
         "}"
         "</script>"
         "</body></html>";
@@ -143,106 +170,20 @@ class ScreenshotHandler : public AsyncWebHandler {
       return;
     }
 
-<<<<<<< Updated upstream
-    // PART 2: Generating the BMP file
-    lv_display_t *disp = lv_display_get_default();
-    if (!disp) { request->send(500, "text/plain", "No display found"); return; }
-
-    int32_t width  = lv_display_get_horizontal_resolution(disp);
-    int32_t height = lv_display_get_vertical_resolution(disp);
-
-    // Get the active draw buffer from LVGL
-    lv_draw_buf_t *draw_buf = lv_display_get_buf_active(disp);
-    if (!draw_buf || !draw_buf->data) {
-      request->send(500, "text/plain", "No framebuffer available");
-      return;
-    }
-
-    // BMP calculations: rows must be a multiple of 4 bytes (padding)
-    uint32_t row_size   = ((width * 3 + 3) / 4) * 4;
-    uint32_t pixel_data = row_size * height;
-    uint32_t file_size  = 54 + pixel_data; // 54 bytes is the standard BMP header
-
-    // Allocate memory in PSRAM (SPIRAM) because internal RAM is usually too small
-    uint8_t *bmp = (uint8_t *) heap_caps_malloc(file_size, MALLOC_CAP_SPIRAM);
-    if (!bmp) { request->send(503, "text/plain", "Not enough PSRAM available"); return; }
-
-    // Manually fill the BMP Header
-    memset(bmp, 0, 54);
-    bmp[0] = 'B'; bmp[1] = 'M'; // File type
-    uint32_t fs     = file_size;
-    uint32_t offset = 54;
-    uint32_t pd     = pixel_data;
-    uint32_t dib    = 40;
-    int32_t  w      = width;
-    int32_t  h      = -height; // Negative height ensures top-down pixel order
-    uint16_t planes = 1;
-    uint16_t bpp    = 24;      // 24-bit color (RGB888)
-
-    memcpy(bmp + 2,  &fs,     4);
-    memcpy(bmp + 10, &offset, 4);
-    memcpy(bmp + 14, &dib,    4);
-    memcpy(bmp + 18, &w,      4);
-    memcpy(bmp + 22, &h,      4);
-    memcpy(bmp + 26, &planes, 2);
-    memcpy(bmp + 28, &bpp,    2);
-    memcpy(bmp + 34, &pd,     4);
-
-    // Copy and convert pixels from LVGL (RGB565) to BMP (RGB888)
-    // In LVGL v9 the framebuffer is raw RGB565 uint16_t data
-    uint16_t *fb = (uint16_t *) draw_buf->data;
-    uint8_t *dst = bmp + 54;
-
-    for (int32_t y = 0; y < height; y++) {
-      uint8_t *row = dst + y * row_size;
-      for (int32_t x = 0; x < width; x++) {
-        uint16_t pixel = fb[y * width + x];
-        // RGB565: RRRRRGGGGGGBBBBB -> scale each channel to 8-bit
-        uint8_t r = (pixel >> 11) & 0x1F;
-        uint8_t g = (pixel >> 5)  & 0x3F;
-        uint8_t b =  pixel        & 0x1F;
-        row[x * 3 + 2] = (r << 3) | (r >> 2); // Red
-        row[x * 3 + 1] = (g << 2) | (g >> 4); // Green
-        row[x * 3 + 0] = (b << 3) | (b >> 2); // Blue
-      }
-    }
-
-    // PART 3: Generate dynamic filename with timestamp
-    time_t now = ::time(nullptr);
-    struct tm timeinfo;
-    localtime_r(&now, &timeinfo);
-
-    char filename[64];
-    // Format: OpenAmber_Screenshot_YYYYMMDDHHMM.bmp
-    strftime(filename, sizeof(filename), "OpenAmber_Screenshot_%Y%m%d%H%M.bmp", &timeinfo);
-
-    // Prepare header for download with the unique filename
-    char header_content[128];
-    snprintf(header_content, sizeof(header_content), "attachment; filename=\"%s\"", filename);
-
-    // Send the BMP file to the browser
-    auto *response = request->beginResponse(200, "image/bmp", bmp, file_size);
-    response->addHeader("Content-Disposition", header_content);
-    request->send(response);
-
-    // Free memory after sending to prevent leaks
-    heap_caps_free(bmp);
-  }
-};
-=======
+    // --- JPEG screenshot ---
     if (!g_framebuffer) {
       request->send(503, "text/plain", "Framebuffer not initialized");
       return;
     }
 
-    // Configure JPEG encoder (esp_new_jpeg v1.0.0 API)
+    // Configureer de JPEG encoder (esp_new_jpeg v1.0.0 API)
     jpeg_enc_config_t enc_cfg = DEFAULT_JPEG_ENC_CONFIG();
     enc_cfg.width       = g_fb_width;
     enc_cfg.height      = g_fb_height;
-    enc_cfg.src_type    = JPEG_PIXEL_FORMAT_RGB565_LE;
-    enc_cfg.subsampling = JPEG_SUBSAMPLE_420;
-    enc_cfg.quality     = 80;
-    enc_cfg.task_enable = false;
+    enc_cfg.src_type    = JPEG_PIXEL_FORMAT_RGB565_LE;  // Invoerformaat van LVGL framebuffer
+    enc_cfg.subsampling = JPEG_SUBSAMPLE_420;            // Kleursubsampling voor kleinere bestanden
+    enc_cfg.quality     = 80;                            // JPEG kwaliteit (0-100)
+    enc_cfg.task_enable = false;                         // Synchroon encoderen, geen aparte taak
 
     jpeg_enc_handle_t enc_handle = NULL;
     if (jpeg_enc_open(&enc_cfg, &enc_handle) != JPEG_ERR_OK) {
@@ -250,7 +191,7 @@ class ScreenshotHandler : public AsyncWebHandler {
       return;
     }
 
-    // Allocate output buffer (~300KB should be more than enough for quality 80)
+    // Alloceer outputbuffer in PSRAM — 300 KB is ruim voldoende bij quality 80
     size_t jpg_buf_size = 300 * 1024;
     uint8_t *jpg_buf = (uint8_t *) heap_caps_malloc(jpg_buf_size, MALLOC_CAP_SPIRAM);
     if (!jpg_buf) {
@@ -259,6 +200,7 @@ class ScreenshotHandler : public AsyncWebHandler {
       return;
     }
 
+    // Codeer de framebuffer naar JPEG
     int out_len = 0;
     jpeg_error_t err = jpeg_enc_process(enc_handle,
                                         (uint8_t *) g_framebuffer,
@@ -276,14 +218,17 @@ class ScreenshotHandler : public AsyncWebHandler {
 
     ESP_LOGI("screenshot", "JPEG encoded: %d bytes (%.1f KB)", out_len, out_len / 1024.0f);
 
+    // Genereer een unieke bestandsnaam op basis van de huidige tijd
     time_t now = ::time(nullptr);
     struct tm timeinfo;
     localtime_r(&now, &timeinfo);
     char filename[64];
     strftime(filename, sizeof(filename), "OpenAmber_Screenshot_%Y%m%d%H%M.jpg", &timeinfo);
+
     char header_content[128];
     snprintf(header_content, sizeof(header_content), "attachment; filename=\"%s\"", filename);
 
+    // Verstuur de JPEG als downloadbaar bestand
     auto *response = request->beginResponse(200, "image/jpeg", jpg_buf, out_len);
     response->addHeader("Content-Disposition", header_content);
     request->send(response);
@@ -292,13 +237,38 @@ class ScreenshotHandler : public AsyncWebHandler {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Registratie
+// ---------------------------------------------------------------------------
+
+/**
+ * @brief Registreert de ScreenshotHandler op de ESPHome AsyncWebServer.
+ *
+ * Aanroepen vanuit on_boot (priority 200), nadat de webserver is gestart.
+ * Combineert handler-registratie met de screenshot_init() aanroep.
+ *
+ * Voorbeeld in openamber-waveshare-display.yaml:
+ * @code
+ *   on_boot:
+ *     - priority: 200
+ *       then:
+ *         - lambda: |-
+ *             screenshot_init(1024, 600);
+ *             register_screenshot_handler();
+ * @endcode
+ */
 inline void register_screenshot_handler() {
   static ScreenshotHandler handler;
   auto *base = esphome::web_server_base::global_web_server_base;
-  if (base == nullptr) { ESP_LOGE("screenshot", "web_server_base is null"); return; }
+  if (base == nullptr) {
+    ESP_LOGE("screenshot", "web_server_base is null — handler niet geregistreerd");
+    return;
+  }
   auto *server = base->get_server();
-  if (server == nullptr) { ESP_LOGE("screenshot", "AsyncWebServer is null"); return; }
+  if (server == nullptr) {
+    ESP_LOGE("screenshot", "AsyncWebServer is null — handler niet geregistreerd");
+    return;
+  }
   server->addHandler(&handler);
-  ESP_LOGI("screenshot", "Screenshot handler registered");
+  ESP_LOGI("screenshot", "Screenshot handler geregistreerd op /screenshot en /screenshot.jpg");
 }
->>>>>>> Stashed changes
