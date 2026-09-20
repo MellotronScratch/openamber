@@ -242,6 +242,7 @@
   name: "SG-Ready A"
   address: 1211
   register_type: holding
+  reuse_previous_range: true
   device_class: running
   web_server: 
     sorting_group_id: diagnostic
@@ -285,6 +286,7 @@
   name: "SG-Ready B"
   address: 1220
   register_type: holding
+  reuse_previous_range: true
   device_class: running
   web_server: 
     sorting_group_id: diagnostic
@@ -343,7 +345,6 @@
   register_type: holding
   address: 2108
   bitmask: 0x1
-
 - platform: modbus_controller
   modbus_controller_id: modbus_outside_unit
   name: "Bodemplaat verwarming"
@@ -877,6 +878,22 @@
     sorting_group_id: error_codes
 
 - platform: template
+  id: error_modbus_connection_timeout
+  name: "Modbus verbinding timeout"
+  device_class: problem
+  entity_category: diagnostic
+  web_server:
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_three_way_valve_state_timeout
+  name: "3-weg klep status fout"
+  device_class: problem
+  entity_category: diagnostic
+  web_server:
+    sorting_group_id: error_codes
+
+- platform: template
   id: error_active
   name: "Error actief"
   device_class: problem
@@ -911,7 +928,9 @@
            id(error_flag_f18).state ||
            id(error_pump_start_timeout).state ||
            id(error_compressor_start_timeout).state ||
-           id(error_pump_stop_timeout).state;
+           id(error_pump_stop_timeout).state ||
+           id(error_modbus_connection_timeout).state ||
+           id(error_three_way_valve_state_timeout).state;
 
 - platform: template
   id: warning_active

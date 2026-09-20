@@ -395,6 +395,21 @@
     sorting_group_id: heating_settings
 
 - platform: template
+  id: pump_p0_pid_defrost_pwm
+  name: "Pomp P0 PID defrost PWM"
+  optimistic: True
+  min_value: 20
+  max_value: 100
+  step: 1
+  unit_of_measurement: "%"
+  initial_value: 100
+  restore_value: True
+  entity_category: config
+  web_server:
+    sorting_group_id: heating_settings
+
+
+- platform: template
   id: pump_p0_pid_kp
   name: "Pomp P0 PID Kp"
   optimistic: True
@@ -684,6 +699,7 @@
   address: 1103
   min_value: 0
   max_value: 1000
+  reuse_previous_range: true
   web_server:
     sorting_group_id: manual_control
 
@@ -694,6 +710,7 @@
   address: 2008
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
   min_value: 0
   max_value: 1000
   step: 1
@@ -709,6 +726,7 @@
   address: 2001
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
   min_value: 0
   max_value: 500
   step: 1
@@ -723,6 +741,7 @@
   address: 2005
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
   mode: box
 
 - platform: modbus_controller
@@ -820,6 +839,7 @@
   address: 3012
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
 
 - platform: modbus_controller
   modbus_controller_id: modbus_outside_unit
@@ -926,6 +946,7 @@
   address: 3276
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
   lambda: |-
     return x - 30;
   write_lambda: |-
@@ -965,6 +986,7 @@
   address: 3336
   register_type: holding
   value_type: S_WORD
+  reuse_previous_range: true
   lambda: |-
     return x - 30;
   write_lambda: |-
