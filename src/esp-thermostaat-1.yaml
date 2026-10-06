@@ -1,0 +1,278 @@
+# Board: ESP32 DevKit V1 (Espressif)
+# Definition: definitions/boards/esp32-devkit-v1/manifest.yaml
+
+substitutions:
+  name: esp-thermostaat-1
+  peer_mac: "20:6E:F1:8B:05:DC"
+
+esphome:
+  name: ${name}
+  on_boot:
+    priority: -100
+    then:
+      - logger.log:
+          format: "Mijn MAC: %s"
+          args: ['get_mac_address_pretty().c_str()']
+
+esp32:
+  variant: esp32
+  flash_size: 4MB
+  framework:
+    type: esp-idf
+
+logger: 
+  level: VERBOSE
+  logs:
+    espnow: VERBOSE
+
+api:
+  encryption:
+    key: !secret esp_thermostaat_1__encryption_key
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: ESP-thermostaat Fallback Hotspot
+    password: "J32JBGDjv9fp"
+
+captive_portal:
+
+web_server:
+  port: 80
+  version: 3
+
+script:
+  - id: send_setpoints
+    mode: restart            # snel draaien aan de knop geeft één pakket
+    then:
+      - delay: 500ms
+      - espnow.send:
+          address: ${peer_mac}
+          data: !lambda |-
+            char buf[48];
+            snprintf(buf, sizeof(buf), "slo=%.1f;shi=%.1f",
+                     id(target_low).state, id(target_high).state);
+            return std::vector<uint8_t>(buf, buf + strlen(buf));
+
+number:
+  - platform: template
+    id: target_low
+    name: "Setpoint laag"
+    min_value: 10
+    max_value: 25
+    step: 0.5
+    initial_value: 20.5
+    optimistic: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    set_action:
+      - script.execute: send_setpoints
+
+  - platform: template
+    id: target_high
+    name: "Setpoint hoog"
+    min_value: 15
+    max_value: 30
+    step: 0.5
+    initial_value: 24.0
+    optimistic: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    set_action:
+      - script.execute: send_setpoints
+
+select:
+  - platform: template
+    id: hp_mode
+    name: "Modus"
+    options: ["Uit", "Verwarmen", "Koelen"]
+    initial_option: "Uit"
+    optimistic: true
+    set_action:
+      - espnow.send:
+          address: ${peer_mac}
+          data: !lambda |-
+            const char *m = (x == "Verwarmen") ? "heat" : (x == "Koelen") ? "cool" : "off";
+            std::string s = std::string("md=") + m;
+            return std::vector<uint8_t>(s.begin(), s.end());
+  
+espnow:
+  peers:
+    - ${peer_mac}
+  on_receive:
+    - address: ${peer_mac}
+      then:
+        - lambda: |-
+            // Zet de ontvangen bytes om naar tekst ('data' en 'size' levert on_receive zelf aan).
+            std::string s(data, data + size);
+            // Leespositie in de tekst, we beginnen bij het eerste teken.
+            size_t pos = 0;
+            // Herhaal zolang er nog tekst over is om te lezen.
+            while (pos < s.size()) {
+              // Zoek de eerstvolgende ';' (het einde van dit stukje).
+              size_t end = s.find(';', pos);
+              // Geen ';' meer? Dan loopt het laatste stukje tot het einde van de tekst.
+              if (end == std::string::npos) end = s.size();
+              // Knip het stukje eruit, bijvoorbeeld "tw=55.6".
+              std::string item = s.substr(pos, end - pos);
+              // Zoek het '=' dat de naam van de waarde scheidt.
+              size_t eq = item.find('=');
+              // Alleen doorgaan als er een '=' is gevonden (anders is het stukje onbruikbaar).
+              if (eq != std::string::npos) {
+                // Alles voor het '=' is de naam, bijvoorbeeld "tw".
+                std::string key = item.substr(0, eq);
+                // Alles na het '=' is de waarde als tekst, bijvoorbeeld "55.6".
+                std::string val = item.substr(eq + 1);
+                // Zet die tekst om naar een getal. Bij "md=heat" geeft dit 0, maar die waarde gebruiken we daar niet.
+                float v = atof(val.c_str());
+                // Tapwatertemperatuur: zet de waarde in de sensor 'remote_tw', zodat hij in de webinterface verschijnt.
+                if (key == "tw")       id(remote_tw).publish_state(v);
+                // CV-aanvoertemperatuur (Tc).
+                else if (key == "tc")  id(remote_tc).publish_state(v);
+                // CV-aanvoertemperatuur (Tuo).
+                else if (key == "tuo") id(remote_tuo).publish_state(v);
+                // CV-retourtemperatuur (Tui).
+                else if (key == "tui") id(remote_tui).publish_state(v);
+                // Buitentemperatuur (Ta).
+                else if (key == "ta")  id(remote_ta).publish_state(v);
+                // Ruimtetemperatuur.
+                else if (key == "rt")  id(remote_rt).publish_state(v);
+                // Laag setpoint: alleen overnemen als er niet net een eigen wijziging wordt verstuurd.
+                // Zo springt je knopstand niet terug door een statuspakket dat nog onderweg was.
+                else if (key == "slo" && !id(send_setpoints).is_running()) id(target_low).publish_state(v);
+                // Hoog setpoint, met dezelfde bescherming.
+                else if (key == "shi" && !id(send_setpoints).is_running()) id(target_high).publish_state(v);
+                // Modus: dit is tekst, geen getal, dus we gebruiken 'val' in plaats van 'v'.
+                else if (key == "md") {
+                  // "heat" uit het pakket wordt de keuze "Verwarmen" in de select.
+                  if (val == "heat")      id(hp_mode).publish_state("Verwarmen");
+                  // "cool" wordt "Koelen".
+                  else if (val == "cool") id(hp_mode).publish_state("Koelen");
+                  // Al het andere (ook "off") wordt "Uit".
+                  else                    id(hp_mode).publish_state("Uit");
+                }
+              }
+              // Ga naar het volgende stukje, voorbij de ';' die we net hebben gevonden.
+              pos = end + 1;
+            }
+
+sensor:
+  - platform: template
+    id: remote_tw
+    name: "Tapwatertemperatuur (Tw)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    id: remote_tc
+    name: "CV-aanvoertemperatuur (Tc)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    id: remote_tuo
+    name: "CV-aanvoertemperatuur (Tuo)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    id: remote_tui
+    name: "CV-retourtemperatuur (Tui)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    id: remote_ta
+    name: "Buitentemperatuur (Ta)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  - platform: template
+    id: remote_rt
+    name: "Ruimtetemperatuur"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: never
+
+  # Fictieve temperatuur, later te vervangen door de BME680.
+  - platform: template
+    id: bme_temp
+    name: "Kamertemperatuur"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Rond 21 °C, met een willekeurige afwijking van 0 tot 1,99 graden.
+      return 21.0 + (random_uint32() % 200) / 100.0;
+
+  # Fictieve luchtvochtigheid, later te vervangen door de BME680.
+  - platform: template
+    id: bme_hum
+    name: "Luchtvochtigheid"
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Rond 45 %, met een willekeurige afwijking van 0 tot 9,99 procentpunt.
+      return 45.0 + (random_uint32() % 1000) / 100.0;
+
+  # Dauwpunt, berekend uit de twee sensoren hierboven.
+  - platform: template
+    id: bme_dewpoint
+    name: "Dauwpunt"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Lees de huidige waarden van de twee sensoren.
+      float t = id(bme_temp).state;
+      float rh = id(bme_hum).state;
+      // Nog geen geldige meting? Dan ook geen dauwpunt.
+      if (std::isnan(t) || std::isnan(rh) || rh <= 0) return NAN;
+      // Constanten van de Magnus-formule (geldig van ongeveer -45 tot 60 °C).
+      const float b = 17.62, c = 243.12;
+      // Tussenstap van de formule: g = ln(RV/100) + b*T/(c+T).
+      float g = logf(rh / 100.0f) + (b * t) / (c + t);
+      // Het dauwpunt zelf: c*g / (b-g).
+      return (c * g) / (b - g);
+
+# Elke 15 seconden de drie waarden naar OpenAmber sturen.
+interval:
+  - interval: 15s
+    then:
+      - espnow.send:
+          address: ${peer_mac}
+          data: !lambda |-
+            // bt = temperatuur, bh = luchtvochtigheid, dp = dauwpunt.
+            char buf[48];
+            snprintf(buf, sizeof(buf), "bt=%.1f;bh=%.1f;dp=%.1f",
+                     id(bme_temp).state,
+                     id(bme_hum).state,
+                     id(bme_dewpoint).state);
+            return std::vector<uint8_t>(buf, buf + strlen(buf));

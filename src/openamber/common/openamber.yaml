@@ -2,6 +2,7 @@ substitutions:
   device_name: openamber
   device_friendly_name: OpenAmber
   device_project_name: jordi.openamber
+  peer_mac: "E0:5A:1B:75:73:60"   # MAC van esp-thermostaat-1
 
 packages:
   maintenance_proxy_switches: !include maintenance_proxy_switches.yaml
@@ -53,6 +54,85 @@ esphome:
             then:
               - mqtt.enable:
 
+espnow:
+  peers:
+    - ${peer_mac}
+  on_receive:
+    - address: ${peer_mac}
+      then:
+        - lambda: |-
+            // Zet de ontvangen bytes om naar tekst ('data' en 'size' levert on_receive zelf aan).
+            std::string s(data, data + size);
+            // Waarden voor de commando's. NAN betekent "niet in dit pakket".
+            float lo = NAN, hi = NAN;
+            // De gewenste modus als tekst; leeg betekent "niet in dit pakket".
+            std::string md;
+            // Leespositie in de tekst, we beginnen bij het eerste teken.
+            size_t pos = 0;
+            // Herhaal zolang er nog tekst over is om te lezen.
+            while (pos < s.size()) {
+              // Zoek de eerstvolgende ';' (het einde van dit stukje).
+              size_t end = s.find(';', pos);
+              // Geen ';' meer? Dan loopt het laatste stukje tot het einde van de tekst.
+              if (end == std::string::npos) end = s.size();
+              // Knip het stukje eruit, bijvoorbeeld "bt=21.4".
+              std::string item = s.substr(pos, end - pos);
+              // Zoek het '=' dat de naam van de waarde scheidt.
+              size_t eq = item.find('=');
+              // Alleen doorgaan als er een '=' is gevonden (anders is het stukje onbruikbaar).
+              if (eq != std::string::npos) {
+                // Alles voor het '=' is de naam, bijvoorbeeld "bt".
+                std::string key = item.substr(0, eq);
+                // Alles na het '=' is de waarde als tekst, bijvoorbeeld "21.4".
+                std::string val = item.substr(eq + 1);
+                // Commando's: bewaren, ze worden hieronder in één keer toegepast.
+                // Laag setpoint: tekst omzetten naar een getal.
+                if (key == "slo")      lo = atof(val.c_str());
+                // Hoog setpoint.
+                else if (key == "shi") hi = atof(val.c_str());
+                // Modus: als tekst bewaren ("heat", "cool" of "off").
+                else if (key == "md")  md = val;
+                // Sensorwaarden van de thermostaat: direct in de sensoren zetten.
+                // Temperatuur van de BME680.
+                else if (key == "bt")  id(thermostat_temp).publish_state(atof(val.c_str()));
+                // Luchtvochtigheid.
+                else if (key == "bh")  id(thermostat_hum).publish_state(atof(val.c_str()));
+                // Dauwpunt (op de thermostaat berekend).
+                else if (key == "dp")  id(thermostat_dewpoint).publish_state(atof(val.c_str()));
+              }
+              // Ga naar het volgende stukje, voorbij de ';' die we net hebben gevonden.
+              pos = end + 1;
+            }
+            // Leeg wijzigingsverzoek voor de thermostaat van OpenAmber.
+            auto call = id(climate_controller).make_call();
+            // Houdt bij of er iets is om toe te passen.
+            bool changed = false;
+            // Alleen als beide setpoints in het pakket zaten...
+            if (!std::isnan(lo) && !std::isnan(hi)) {
+              // ...controleren of ze redelijk zijn: niet te laag, niet te hoog, laag niet boven hoog.
+              if (lo >= 5 && hi <= 35 && lo <= hi) {
+                // Zet de setpoints in het verzoek.
+                call.set_target_temperature_low(lo);
+                call.set_target_temperature_high(hi);
+                // Onthoud dat er iets is om uit te voeren.
+                changed = true;
+              } else {
+                // Buiten de grenzen: negeren en een waarschuwing loggen.
+                ESP_LOGW("espnow", "Setpoints genegeerd: %.1f - %.1f", lo, hi);
+              }
+            }
+            // Modus omzetten naar de bijbehorende thermostaatstand.
+            if (md == "heat")      { call.set_mode(climate::CLIMATE_MODE_HEAT); changed = true; }
+            else if (md == "cool") { call.set_mode(climate::CLIMATE_MODE_COOL); changed = true; }
+            else if (md == "off")  { call.set_mode(climate::CLIMATE_MODE_OFF);  changed = true; }
+            // Er is een commando binnengekomen en toegepast:
+            if (changed) {
+              // Voer het verzoek uit, zodat de thermostaat van OpenAmber zich aanpast.
+              call.perform();
+              // Alleen na een commando meteen de nieuwe stand terugmelden.
+              id(espnow_send_status).execute();
+            }
+
 interval:
   - interval: 5min
     then:
@@ -71,12 +151,15 @@ interval:
                 id: firmware_update
           else:
             - logger.log: "Skipping scheduled firmware update check until time is synchronized"
-
+  - interval: 15s
+    then:
+      - script.execute: espnow_send_status
 logger:
   level: INFO
   baud_rate: 0
   logs:
     modbus: ERROR
+    espnow: INFO
 
 api:
   reboot_timeout: 0s

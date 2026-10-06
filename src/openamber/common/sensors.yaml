@@ -1054,3 +1054,36 @@
   address: 3510
   register_type: holding
   value_type: S_WORD
+
+- platform: template
+  id: thermostat_temp
+  name: "Thermostaat temperatuur"
+  unit_of_measurement: "°C"
+  device_class: temperature
+  state_class: measurement
+  accuracy_decimals: 1
+  update_interval: never
+  web_server:
+    sorting_group_id: temperature_sensors
+
+- platform: template
+  id: thermostat_hum
+  name: "Thermostaat luchtvochtigheid"
+  unit_of_measurement: "%"
+  device_class: humidity
+  state_class: measurement
+  accuracy_decimals: 1
+  update_interval: never
+  web_server:
+    sorting_group_id: temperature_sensors
+
+- platform: template
+  id: thermostat_dewpoint
+  name: "Thermostaat dauwpunt"
+  unit_of_measurement: "°C"
+  device_class: temperature
+  state_class: measurement
+  accuracy_decimals: 1
+  update_interval: never
+  web_server:
+    sorting_group_id: temperature_sensors
