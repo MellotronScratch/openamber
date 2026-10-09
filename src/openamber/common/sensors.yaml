@@ -1055,35 +1055,149 @@
   register_type: holding
   value_type: S_WORD
 
+# Werkelijke setpoints en modus van de thermostaat in OpenAmber
 - platform: template
+  id: pt_target_low
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(climate_controller).target_temperature_low;'
+
+- platform: template
+  id: pt_target_high
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(climate_controller).target_temperature_high;'
+
+- platform: template
+  id: pt_mode                     # 0 = uit, 1 = verwarmen, 2 = koelen
+  internal: true
+  update_interval: 5s
+  lambda: |-
+    auto m = id(climate_controller).mode;
+    if (m == climate::CLIMATE_MODE_HEAT) return 1.0f;
+    if (m == climate::CLIMATE_MODE_COOL) return 2.0f;
+    return 0.0f;
+
+# Status als 0/1 (een sensor wordt periodiek herhaald, een binary sensor niet)
+- platform: template
+  id: pt_twa                      # tapwater aanwezig
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(dhw_enabled_switch).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_err                      # storing
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(error_active).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_legp                     # legionellapreventie ingeschakeld
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(legio_enabled_switch).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_wv                       # warmtevraag
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(heat_demand_active_sensor).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_twp                      # tapwaterpomp
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(dhw_pump_active_sensor).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_twv                      # tapwatervraag
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(dhw_demand_active_sensor).state ? 1.0f : 0.0f;'
+
+- platform: template
+  id: pt_lega                     # legionellacyclus actief
+  internal: true
+  update_interval: 5s
+  lambda: 'return id(dhw_legionella_run_active_sensor).state ? 1.0f : 0.0f;'
+
+# --- Wat de thermostaat naar OpenAmber verstuurt (provider: openamber-thermostaat) ---
+
+# BME680-waarden; zelfde ids als de oude template-sensors
+- platform: packet_transport
+  provider: openamber-thermostaat
+  remote_id: bt
   id: thermostat_temp
+  internal: false
   name: "Thermostaat temperatuur"
   unit_of_measurement: "°C"
   device_class: temperature
   state_class: measurement
   accuracy_decimals: 1
-  update_interval: never
   web_server:
     sorting_group_id: temperature_sensors
 
-- platform: template
+- platform: packet_transport
+  provider: openamber-thermostaat
+  remote_id: bh
   id: thermostat_hum
+  internal: false
   name: "Thermostaat luchtvochtigheid"
   unit_of_measurement: "%"
   device_class: humidity
   state_class: measurement
   accuracy_decimals: 1
-  update_interval: never
   web_server:
     sorting_group_id: temperature_sensors
 
-- platform: template
+- platform: packet_transport
+  provider: openamber-thermostaat
+  remote_id: dp
   id: thermostat_dewpoint
+  internal: false
   name: "Thermostaat dauwpunt"
   unit_of_measurement: "°C"
   device_class: temperature
   state_class: measurement
   accuracy_decimals: 1
-  update_interval: never
   web_server:
     sorting_group_id: temperature_sensors
+
+# Commando van de thermostaat:
+#   cmd = ((volgnr * 3 + modus) * 100 + laag*2) * 100 + hoog*2
+# Wordt alleen uitgevoerd als het volgnummer anders is dan het laatst uitgevoerde.
+# Het pakket wordt periodiek herhaald; dat levert dus geen nieuw commando op.
+- platform: packet_transport
+  provider: openamber-thermostaat
+  remote_id: cmd
+  id: rx_cmd
+  internal: true
+  on_value:
+    then:
+      - lambda: |-
+          if (std::isnan(x)) return;
+          // Pak het getal uit: hoog*2, laag*2, modus en volgnummer
+          long n = lroundf(x);
+          int hi2 = n % 100;  n /= 100;
+          int lo2 = n % 100;  n /= 100;
+          int mode = n % 3;
+          int seq = n / 3;
+          // Zelfde volgnummer als de vorige keer: herhaald pakket, negeren
+          if (seq == id(last_cmd_seq)) return;
+          id(last_cmd_seq) = seq;
+          float lo = lo2 / 2.0f;
+          float hi = hi2 / 2.0f;
+          auto call = id(climate_controller).make_call();
+          // Setpoints alleen toepassen als ze redelijk zijn
+          if (lo >= 5 && hi <= 35 && lo <= hi) {
+            call.set_target_temperature_low(lo);
+            call.set_target_temperature_high(hi);
+          } else {
+            ESP_LOGW("cmd", "Setpoints genegeerd: %.1f - %.1f", lo, hi);
+          }
+          // Modus: 0 = uit, 1 = verwarmen, 2 = koelen
+          if (mode == 1)      call.set_mode(climate::CLIMATE_MODE_HEAT);
+          else if (mode == 2) call.set_mode(climate::CLIMATE_MODE_COOL);
+          else                call.set_mode(climate::CLIMATE_MODE_OFF);
+          call.perform();
+          ESP_LOGI("cmd", "Commando %d: modus %d, %.1f - %.1f", seq, mode, lo, hi);

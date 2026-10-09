@@ -550,31 +550,33 @@
           if (id(climate_controller).mode == climate::CLIMATE_MODE_HEAT) md = "heat";
           // Staat hij op koelen? Dan wordt de modus "cool".
           else if (id(climate_controller).mode == climate::CLIMATE_MODE_COOL) md = "cool";
-          // Tekstvak van 128 tekens waarin we het pakket opbouwen.
-          char buf[128];
-          // Vul het tekstvak. %.1f is een kommagetal met één decimaal, %s is een tekst.
-          // De waarden na de tekst horen op volgorde bij de plekken in de tekst.
+
+          // Tekstvak vergroot naar 256 tekens i.v.m. de extra sensoren
+          char buf[256];
+
+          // Vul het tekstvak met temperaturen (%.1f), modus (%s) en booleans (%d -> 1/0)
           snprintf(buf, sizeof(buf),
-                   // De opmaak: negen onderdelen, gescheiden door ';'.
-                   "tw=%.1f;tc=%.1f;tuo=%.1f;tui=%.1f;ta=%.1f;rt=%.1f;slo=%.1f;shi=%.1f;md=%s",
-                   // 1e %.1f (tw): tapwatertemperatuur.
-                   id(dhw_temperature_tw_sensor).state,
-                   // 2e %.1f (tc): CV-aanvoertemperatuur (Tc).
-                   id(heat_cool_temperature_tc).state,
-                   // 3e %.1f (tuo): CV-aanvoertemperatuur (Tuo).
-                   id(outlet_temperature_tuo).state,
-                   // 4e %.1f (tui): CV-retourtemperatuur (Tui).
-                   id(inlet_temperature_tui).state,
-                   // 5e %.1f (ta): buitentemperatuur.
-                   id(temperature_outside_ta).state,
-                   // 6e %.1f (rt): ruimtetemperatuur.
-                   id(room_temperature).state,
-                   // 7e %.1f (slo): het huidige lage setpoint van de thermostaat.
-                   id(climate_controller).target_temperature_low,
-                   // 8e %.1f (shi): het huidige hoge setpoint van de thermostaat.
-                   id(climate_controller).target_temperature_high,
-                   // %s (md): de modus als tekst ("off", "heat" of "cool").
-                   md);
-          // espnow.send verwacht een lijst bytes, geen tekst. Dit maakt die lijst van de tekens in buf.
-          // buf is het begin en buf + strlen(buf) het einde van de tekst (zonder afsluitteken).
+                   "tw=%.1f;tc=%.1f;tuo=%.1f;tui=%.1f;ta=%.1f;rt=%.1f;slo=%.1f;shi=%.1f;md=%s;"
+                   "twa=%d;err=%d;legp=%d;wv=%d;twp=%d;twv=%d;lega=%d",
+
+                   id(dhw_temperature_tw_sensor).state,             // tw
+                   id(heat_cool_temperature_tc).state,              // tc
+                   id(outlet_temperature_tuo).state,                // tuo
+                   id(inlet_temperature_tui).state,                 // tui
+                   id(temperature_outside_ta).state,                // ta
+                   id(room_temperature).state,                      // rt
+                   id(climate_controller).target_temperature_low,   // slo
+                   id(climate_controller).target_temperature_high,  // shi
+                   md,
+                   id(dhw_enabled_switch).state,                    // twa
+                   id(error_active).state,                          // err
+                   id(legio_enabled_switch).state,                  // legp
+                   id(heat_demand_active_sensor).state,             // wv
+                   id(dhw_pump_active_sensor).state,                // twp
+                   id(dhw_demand_active_sensor).state,              // twv
+                   id(dhw_legionella_run_active_sensor).state       // lega
+                  );
+
           return std::vector<uint8_t>(buf, buf + strlen(buf));
+
+# number.openamber_ruimte_temperatuur_offset
