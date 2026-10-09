@@ -126,9 +126,7 @@ interval:
                 id: firmware_update
           else:
             - logger.log: "Skipping scheduled firmware update check until time is synchronized"
-  - interval: 15s
-    then:
-      - script.execute: espnow_send_status
+
 logger:
   level: INFO
   baud_rate: 0
