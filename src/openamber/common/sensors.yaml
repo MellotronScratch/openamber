@@ -1123,7 +1123,6 @@
 
 # --- Wat de thermostaat naar OpenAmber verstuurt (provider: openamber-thermostaat) ---
 
-# BME680-waarden; zelfde ids als de oude template-sensors
 - platform: packet_transport
   provider: openamber-thermostaat
   remote_id: bt

@@ -1,0 +1,46 @@
+- platform: espnow
+  id: transport_thermostaat
+  espnow_id: espnow_component
+  peer_address: ${peer_mac}
+  # Zet versleuteling pas aan als de verbinding werkt, op beide kanten tegelijk
+  # (zelfde tekst als "espnow_key" in secrets.yaml van de thermostaat):
+  # encryption: !secret espnow_key
+  # rolling_code_enable: true
+  providers:
+    - name: openamber-thermostaat   # "esphome: name:" van de thermostaat
+  sensors:
+    # Temperaturen (bestaande sensors)
+    - id: dhw_temperature_tw_sensor
+      broadcast_id: tw
+    - id: heat_cool_temperature_tc
+      broadcast_id: tc
+    - id: outlet_temperature_tuo
+      broadcast_id: tuo
+    - id: inlet_temperature_tui
+      broadcast_id: tui
+    - id: temperature_outside_ta
+      broadcast_id: ta
+    - id: room_temperature
+      broadcast_id: rt
+    # Werkelijke setpoints en modus (nieuwe template-sensors, zie document 2)
+    - id: pt_target_low
+      broadcast_id: slo
+    - id: pt_target_high
+      broadcast_id: shi
+    - id: pt_mode
+      broadcast_id: mode
+    # Status als 0/1 (nieuwe template-sensors, zie document 2)
+    - id: pt_twa
+      broadcast_id: twa
+    - id: pt_err
+      broadcast_id: err
+    - id: pt_legp
+      broadcast_id: legp
+    - id: pt_wv
+      broadcast_id: wv
+    - id: pt_twp
+      broadcast_id: twp
+    - id: pt_twv
+      broadcast_id: twv
+    - id: pt_lega
+      broadcast_id: lega
