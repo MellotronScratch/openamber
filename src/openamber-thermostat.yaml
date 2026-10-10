@@ -1,5 +1,8 @@
 # =====================================================================
 # OpenAmber thermostaat - WT32S3-21S rond display (ZX2D10GE01R-W4848#B)
+# WT32-S3-WROVER
+# Flash: 16MB
+# PSRAM: 8MB
 # Praat via ESP-NOW (packet_transport) met het OpenAmber-display op de warmtepomp.
 #
 # Wat er over de lucht gaat (alles als sensor, zie ESPHome packet_transport):
@@ -32,6 +35,12 @@ globals:
   - id: mode_code                 # gekozen modus: 0=uit, 1=verwarmen, 2=koelen
     type: int
     initial_value: '0'
+  - id: pending_mode              # modus voor het volgende commando; 3 = ongewijzigd laten
+    type: int
+    initial_value: '3'
+  - id: knob_context              # 0 = hoofdscherm (setpoint), 1 = modus kiezen, 2.. = later
+    type: int
+    initial_value: '0'
 
 esphome:
   name: openamber-thermostaat
@@ -51,10 +60,13 @@ psram:
   speed: 80MHz
 
 logger:
-
+  level: INFO                 # tijdelijk aan om commando's te volgen; espnow en lvgl blijven uit
+  logs:
+    espnow: NONE
+    lvgl: NONE
 api:
   encryption:
-    key: 
+    key: "aYEOmndEDcqJUtjLSYFjcyZKx8FL1n3p5KV78sW+m3M="
 
 ota:
   - platform: esphome
@@ -190,9 +202,11 @@ binary_sensor:
 sensor:
   # --- Draaiknop (Hall-encoder) ---
   # Draaien verandert het lage setpoint; het commando gaat na een korte pauze.
+ 
+
   - platform: rotary_encoder
     id: knob
-    internal: true
+    internal: false
     pin_a:
       number: GPIO6
       inverted: true
@@ -202,25 +216,13 @@ sensor:
       inverted: true
       mode: INPUT
     on_clockwise:
-      - globals.set:
-          id: user_is_adjusting
-          value: 'true'
-      - script.execute: reset_backlight_timer
-      - number.increment:
-          id: target_low
-          cycle: false
-      - script.execute: send_command
-      - script.execute: release_adjusting
+      - script.execute:
+          id: knob_step
+          delta: 1
     on_anticlockwise:
-      - globals.set:
-          id: user_is_adjusting
-          value: 'true'
-      - script.execute: reset_backlight_timer
-      - number.decrement:
-          id: target_low
-          cycle: false
-      - script.execute: send_command
-      - script.execute: release_adjusting
+      - script.execute:
+          id: knob_step
+          delta: -1
 
   # --- BME680 (eigen meting in de kamer) ---
   # Let op: het verwarmingselement en de ledring maken de temperatuur te hoog;
@@ -272,13 +274,13 @@ sensor:
       return (c * g) / (b - g);
 
   # Commando naar OpenAmber: volgnummer, modus en setpoints in een getal
-  #   cmd = ((volgnr * 3 + modus) * 100 + laag*2) * 100 + hoog*2
+  #   cmd = ((volgnr * 4 + modus) * 100 + laag*2) * 100 + hoog*2   (modus 3 = ongewijzigd)
   # Blijft leeg (NaN) tot de gebruiker iets verandert, zodat een herstart
   # geen oud commando herhaalt. Wordt gevuld door het script send_command.
   - platform: template
     id: cmd
     name: "Commando naar OpenAmber"
-    internal: true
+    internal: false
     update_interval: never
 
   # --- Temperaturen van OpenAmber (provider: openamber) ---
@@ -287,11 +289,11 @@ sensor:
     provider: openamber
     id: dhw_temperature_tw_sensor
     remote_id: tw
-    name: "OpenAmber Tapwatertemperatuur (Tw)"
+    name: "Tapwatertemperatuur (Tw)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
     on_value:
       then:
         - lvgl.label.update:
@@ -304,51 +306,51 @@ sensor:
     provider: openamber
     id: heat_cool_temperature_tc
     remote_id: tc
-    name: "OpenAmber CV-aanvoertemperatuur (Tc)"
+    name: "CV-aanvoertemperatuur (Tc)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
 
   - platform: packet_transport
     provider: openamber
     id: outlet_temperature_tuo
     remote_id: tuo
-    name: "OpenAmber CV-aanvoertemperatuur (Tuo)"
+    name: "CV-aanvoertemperatuur (Tuo)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
 
   - platform: packet_transport
     provider: openamber
     id: inlet_temperature_tui
     remote_id: tui
-    name: "OpenAmber CV-retourtemperatuur (Tui)"
+    name: "CV-retourtemperatuur (Tui)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
 
   - platform: packet_transport
     provider: openamber
     id: temperature_outside_ta
     remote_id: ta
-    name: "OpenAmber Buitentemperatuur (Ta)"
+    name: "Buitentemperatuur (Ta)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
 
   - platform: packet_transport
     provider: openamber
     id: room_temperature
     remote_id: rt
-    name: "OpenAmber Ruimtetemperatuur (Tr)"
+    name: "Ruimtetemperatuur (Tr)"
     unit_of_measurement: "°C"
     device_class: temperature
     accuracy_decimals: 1
-    internal: true
+    internal: false
 
   # --- Werkelijke setpoints en modus van OpenAmber ---
   # Alleen overnemen als de gebruiker niet zelf aan de knop draait.
@@ -356,7 +358,7 @@ sensor:
     provider: openamber
     id: rx_slo
     remote_id: slo
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: |-
@@ -366,7 +368,7 @@ sensor:
     provider: openamber
     id: rx_shi
     remote_id: shi
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: |-
@@ -376,7 +378,7 @@ sensor:
     provider: openamber
     id: rx_mode
     remote_id: mode
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: |-
@@ -392,7 +394,7 @@ sensor:
     provider: openamber
     id: rx_twa
     remote_id: twa
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_twa).publish_state(x > 0.5f);'
@@ -401,7 +403,7 @@ sensor:
     provider: openamber
     id: rx_err
     remote_id: err
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_err).publish_state(x > 0.5f);'
@@ -410,7 +412,7 @@ sensor:
     provider: openamber
     id: rx_legp
     remote_id: legp
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_legp).publish_state(x > 0.5f);'
@@ -419,7 +421,7 @@ sensor:
     provider: openamber
     id: rx_wv
     remote_id: wv
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_wv).publish_state(x > 0.5f);'
@@ -428,7 +430,7 @@ sensor:
     provider: openamber
     id: rx_twp
     remote_id: twp
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_twp).publish_state(x > 0.5f);'
@@ -437,7 +439,7 @@ sensor:
     provider: openamber
     id: rx_twv
     remote_id: twv
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_twv).publish_state(x > 0.5f);'
@@ -446,7 +448,7 @@ sensor:
     provider: openamber
     id: rx_lega
     remote_id: lega
-    internal: true
+    internal: false
     on_value:
       then:
         - lambda: 'id(remote_lega).publish_state(x > 0.5f);'
@@ -502,6 +504,9 @@ select:
       - globals.set:
           id: user_is_adjusting
           value: 'true'
+      # Alleen bij een moduskeuze gaat de modus mee in het commando
+      - lambda: |-
+          id(pending_mode) = (x == "Verwarmen") ? 1 : (x == "Koelen") ? 2 : 0;
       - script.execute: send_command
       - script.execute: release_adjusting
     on_value:
@@ -525,8 +530,13 @@ script:
           id(cmd_seq) = id(cmd_seq) % 99 + 1;
           int lo2 = (int) lroundf(id(target_low).state * 2.0f);
           int hi2 = (int) lroundf(id(target_high).state * 2.0f);
-          float v = ((id(cmd_seq) * 3 + id(mode_code)) * 100 + lo2) * 100 + hi2;
+          // Modus: 0 uit, 1 verwarmen, 2 koelen, 3 = ongewijzigd laten (alleen setpoints)
+          int mode = id(pending_mode);
+          id(pending_mode) = 3;
+          float v = ((id(cmd_seq) * 4 + mode) * 100 + lo2) * 100 + hi2;
           id(cmd).publish_state(v);
+          ESP_LOGI("cmd", "Verstuurd: volgnr %d, modus %d, %.1f - %.1f (waarde %.0f)",
+                   id(cmd_seq), mode, id(target_low).state, id(target_high).state, v);
 
   # Zet de vlag "gebruiker draait" 3 s na de laatste klik weer uit.
   # Zolang de vlag aan staat, negeren we setpoints en modus die OpenAmber terugstuurt.
@@ -558,6 +568,56 @@ script:
       - light.turn_off:
           id: status_leds
           transition_length: 1s
+          
+  # Wordt bij elke klik aangeroepen; delta is +1 (rechtsom) of -1 (linksom)
+  - id: knob_step
+    parameters:
+      delta: int
+    then:
+      - script.execute: reset_backlight_timer
+
+      # Context 0: hoofdscherm, setpoint verwarmen
+      - if:
+          condition:
+            lambda: 'return id(knob_context) == 0;'
+          then:
+            - globals.set:
+                id: user_is_adjusting
+                value: 'true'
+            - if:
+                condition:
+                  lambda: 'return delta > 0;'
+                then:
+                  - number.increment:
+                      id: target_low
+                      cycle: false
+                else:
+                  - number.decrement:
+                      id: target_low
+                      cycle: false
+            - script.execute: send_command
+            - script.execute: release_adjusting
+
+      # Context 1: modus kiezen (Uit / Verwarmen / Koelen)
+      # De keuze verstuurt zelf een commando via de set_action van de select.
+      - if:
+          condition:
+            lambda: 'return id(knob_context) == 1;'
+          then:
+            - if:
+                condition:
+                  lambda: 'return delta > 0;'
+                then:
+                  - select.next:
+                      id: hp_mode
+                      cycle: false
+                else:
+                  - select.previous:
+                      id: hp_mode
+                      cycle: false
+
+      # Context 2 en hoger: hier komen later de andere menu's
+      # (bijvoorbeeld helderheid, setpoint koelen, tapwater)
 
 # ---------------------------------------------------------------------
 # 7. ESP-NOW (packet_transport)
@@ -638,6 +698,7 @@ font:
     ]
 
 lvgl:
+  buffer_size: 25%  # Probeer 25%, 50% of 100% afhankelijk van je bordje
   pages:
     - id: canvas_5
       bg_color: 0x283351
