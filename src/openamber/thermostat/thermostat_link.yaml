@@ -1,0 +1,221 @@
+# =====================================================================
+# Thermostaat-koppeling via ESP-NOW (packet_transport) voor OpenAmber
+#
+# Optioneel pakket: aan de originele OpenAmber-bestanden verandert niets.
+# Zet dit bestand in:  src/openamber/optional/thermostat_link.yaml
+# en neem het op via een eigen apparaatbestand
+# (zie openamber-waveshare-display-espnow.yaml).
+#
+# Het apparaatbestand moet deze substitution zetten:
+#   thermostat_peer_mac: "AA:BB:CC:DD:EE:FF"   # MAC van de ronde thermostaat
+# En mag deze overschrijven (standaard hieronder):
+#   thermostat_name: "openamber-thermostaat"   # "esphome: name:" van de thermostaat
+#
+# Let op:
+#  - Commando's van de thermostaat hebben alleen effect op de warmtepomp als
+#    "Thermostaat keuze" in OpenAmber op "Intern" staat (standaard is "Extern").
+#  - Alleen voor builds met scherm: rx_cmd roept update_thermostat_settings_ui
+#    aan, dat alleen in de UI bestaat. Voor een build zonder scherm (leejow)
+#    haal je die ene regel weg.
+#
+# Opbouw: 1. Algemeen  2. Wat OpenAmber verstuurt  3. Wat de thermostaat verstuurt
+# =====================================================================
+
+substitutions:
+  thermostat_name: openamber-thermostaat
+
+# ---------------------------------------------------------------------
+# 1. ALGEMEEN
+# ---------------------------------------------------------------------
+globals:
+  - id: last_cmd_seq              # volgnummer van het laatst uitgevoerde commando
+    type: int
+    restore_value: yes            # blijft bewaard na een herstart, zodat niets opnieuw wordt uitgevoerd
+    initial_value: '-1'
+
+espnow:
+  id: espnow_component
+  peers:
+    - ${thermostat_peer_mac}      # peers moeten hier geregistreerd zijn om pakketten te ontvangen
+
+packet_transport:
+  - platform: espnow
+    id: transport_thermostaat
+    espnow_id: espnow_component
+    peer_address: ${thermostat_peer_mac}
+    # Zet versleuteling pas aan als de verbinding werkt, op beide kanten tegelijk
+    # (zelfde tekst als "espnow_key" in secrets.yaml van de thermostaat):
+    # encryption: !secret espnow_key
+    # rolling_code_enable: true
+    providers:
+      - name: ${thermostat_name}
+
+    # -------------------------------------------------------------
+    # 2. WAT OPENAMBER VERSTUURT
+    # Bij elke regel staat waar de waarde op gebaseerd is.
+    # broadcast_id is de naam waaronder de thermostaat de waarde ontvangt.
+    # -------------------------------------------------------------
+    sensors:
+      # Temperaturen: de bestaande modbus-sensors, rechtstreeks gedeeld
+      - id: dhw_temperature_tw_sensor       # Tapwatertemperatuur (Tw)
+        broadcast_id: tw
+      - id: heat_cool_temperature_tc        # CV-aanvoertemperatuur (Tc)
+        broadcast_id: tc
+      - id: outlet_temperature_tuo          # CV-aanvoertemperatuur (Tuo)
+        broadcast_id: tuo
+      - id: inlet_temperature_tui           # CV-retourtemperatuur (Tui)
+        broadcast_id: tui
+      - id: temperature_outside_ta          # Buitentemperatuur (Ta)
+        broadcast_id: ta
+      - id: room_temperature                # Ruimtetemperatuur (Tr)
+        broadcast_id: rt
+      # Setpoints en modus uit de "Amber thermostat" (climate_controller),
+      # via de template-sensors hieronder (een climate kan niet rechtstreeks gedeeld worden)
+      - id: pt_target_low                   # laag setpoint (verwarmen)
+        broadcast_id: slo
+      - id: pt_target_high                  # hoog setpoint (koelen)
+        broadcast_id: shi
+      - id: pt_mode                         # modus: 0=uit 1=verwarmen 2=koelen
+        broadcast_id: mode
+
+    binary_sensors:
+      # Bestaande binary sensors, rechtstreeks gedeeld
+      - id: error_active                    # "Error actief"
+        broadcast_id: err
+      - id: heat_demand_active_sensor       # "Warmtevraag"
+        broadcast_id: wv
+      - id: cool_demand_active_sensor       # "Koudevraag"
+        broadcast_id: cd
+      - id: dhw_pump_active_sensor          # "Tapwater pomp"
+        broadcast_id: twp
+      - id: dhw_demand_active_sensor        # "Tapwater vraag"
+        broadcast_id: twv
+      - id: dhw_active                      # tapwater is bezig (intern, zonder naam)
+        broadcast_id: da
+      - id: dhw_legionella_run_active_sensor  # "Legionellacyclus actief"
+        broadcast_id: lega
+      # Binary sensors die een switch volgen (hieronder in binary_sensor:)
+      - id: pt_twa                          # volgt de switch "Tapwater aanwezig"
+        broadcast_id: twa
+      - id: pt_legp                         # volgt de switch "Legionellapreventie"
+        broadcast_id: legp
+
+# Binary sensors die een switch alleen-lezen volgen, zodat die gedeeld kan worden
+binary_sensor:
+  - platform: switch
+    id: pt_twa
+    source_id: dhw_enabled_switch           # de switch "Tapwater aanwezig"
+    internal: true
+  - platform: switch
+    id: pt_legp
+    source_id: legio_enabled_switch         # de switch "Legionellapreventie"
+    internal: true
+
+sensor:
+  # Setpoints en modus van de "Amber thermostat", elke 5 s uit de climate gelezen
+  - platform: template
+    id: pt_target_low
+    internal: true
+    update_interval: 5s
+    lambda: 'return id(climate_controller).target_temperature_low;'
+
+  - platform: template
+    id: pt_target_high
+    internal: true
+    update_interval: 5s
+    lambda: 'return id(climate_controller).target_temperature_high;'
+
+  - platform: template
+    id: pt_mode                             # 0 = uit, 1 = verwarmen, 2 = koelen
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      auto m = id(climate_controller).mode;
+      if (m == climate::CLIMATE_MODE_HEAT) return 1.0f;
+      if (m == climate::CLIMATE_MODE_COOL) return 2.0f;
+      return 0.0f;
+
+  # -------------------------------------------------------------
+  # 3. WAT DE THERMOSTAAT VERSTUURT
+  # -------------------------------------------------------------
+  # BME680-waarden van de thermostaat, zichtbaar in de web-interface
+  - platform: packet_transport
+    provider: ${thermostat_name}
+    remote_id: bt                           # temperatuur
+    id: thermostat_temp
+    name: "Thermostaat temperatuur (BME680)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    internal: false
+    web_server:
+      sorting_group_id: temperature_sensors
+
+  - platform: packet_transport
+    provider: ${thermostat_name}
+    remote_id: bh                           # luchtvochtigheid
+    id: thermostat_hum
+    name: "Thermostaat luchtvochtigheid (BME680)"
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    internal: false
+    web_server:
+      sorting_group_id: temperature_sensors
+
+  - platform: packet_transport
+    provider: ${thermostat_name}
+    remote_id: dp                           # dauwpunt (op de thermostaat berekend)
+    id: thermostat_dewpoint
+    name: "Thermostaat dauwpunt (BME680)"
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 1
+    internal: false
+    web_server:
+      sorting_group_id: temperature_sensors
+
+  # Commando van de thermostaat (setpoints en/of modus) in een getal:
+  #   cmd = ((volgnr * 4 + modus) * 100 + laag*2) * 100 + hoog*2
+  #   modus: 0 = uit, 1 = verwarmen, 2 = koelen, 3 = niet aanraken (alleen setpoints)
+  # Wordt alleen uitgevoerd als het volgnummer anders is dan het laatst uitgevoerde;
+  # het pakket wordt periodiek herhaald en levert dan dus geen nieuw commando op.
+  - platform: packet_transport
+    provider: ${thermostat_name}
+    remote_id: cmd
+    id: rx_cmd
+    internal: true
+    on_value:
+      then:
+        - lambda: |-
+            if (std::isnan(x)) return;
+            // Pak het getal uit: hoog*2, laag*2, modus (0-3) en volgnummer
+            long n = lroundf(x);
+            int hi2 = n % 100;  n /= 100;
+            int lo2 = n % 100;  n /= 100;
+            int mode = n % 4;
+            int seq = n / 4;
+            // Zelfde volgnummer als de vorige keer: herhaald pakket, negeren
+            if (seq == id(last_cmd_seq)) return;
+            id(last_cmd_seq) = seq;
+            float lo = lo2 / 2.0f;
+            float hi = hi2 / 2.0f;
+            auto call = id(climate_controller).make_call();
+            // Setpoints alleen toepassen als ze redelijk zijn
+            if (lo >= 5 && hi <= 35 && lo <= hi) {
+              call.set_target_temperature_low(lo);
+              call.set_target_temperature_high(hi);
+            } else {
+              ESP_LOGW("thermostat_link", "Setpoints genegeerd: %.1f - %.1f", lo, hi);
+            }
+            // Modus: 0 = uit, 1 = verwarmen, 2 = koelen, 3 = niet aanraken
+            if (mode == 1)      call.set_mode(climate::CLIMATE_MODE_HEAT);
+            else if (mode == 2) call.set_mode(climate::CLIMATE_MODE_COOL);
+            else if (mode == 0) call.set_mode(climate::CLIMATE_MODE_OFF);
+            call.perform();
+            ESP_LOGI("thermostat_link", "Commando %d: modus %d, %.1f - %.1f", seq, mode, lo, hi);
+            // Scherm van OpenAmber bijwerken (alleen in builds met scherm)
+            id(update_thermostat_settings_ui).execute();

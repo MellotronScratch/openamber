@@ -1,0 +1,15 @@
+# =====================================================================
+# Eigen apparaatbestand: de originele OpenAmber-configuratie voor het 5-inch
+# Waveshare-display, plus de thermostaat-koppeling via ESP-NOW.
+#
+# Zet dit bestand naast openamber-waveshare-display.yaml (in src/) en
+# compileer en flash dit bestand in plaats van het originele.
+# De originele bestanden blijven ongewijzigd.
+# =====================================================================
+substitutions:
+  thermostat_peer_mac: "68:B6:B3:25:10:B0"   # MAC van de ronde thermostaat (controleer in zijn log)
+  thermostat_name: openamber-thermostaat     # "esphome: name:" van de thermostaat
+
+packages:
+  openamber_display: !include openamber-waveshare-display.yaml
+  thermostat_link: !include openamber/thermostat/thermostat_link.yaml
