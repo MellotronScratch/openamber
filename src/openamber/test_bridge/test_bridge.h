@@ -11,11 +11,13 @@
 #include "esphome/components/select/select.h"
 #include "esphome/components/climate/climate.h"
 #include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/datetime/time_entity.h"
 #include "lvgl.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <functional>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -39,6 +41,9 @@ class TestBridge : public Component {
   void register_widget(const std::string &id, lv_obj_t **ptr) {
     this->widgets_[id] = ptr;
   }
+  void register_obj_getter(const std::string &id, std::function<lv_obj_t*()> getter) {
+    this->obj_getters_[id] = getter;
+  }
   void register_sensor(const std::string &id, sensor::Sensor *s) {
     this->sensors_[id] = s;
   }
@@ -57,6 +62,9 @@ class TestBridge : public Component {
   void register_climate(const std::string &id, climate::Climate *clim) {
     this->climates_[id] = clim;
   }
+  void register_time_entity(const std::string &id, datetime::TimeEntity *t) {
+    this->time_entities_[id] = t;
+  }
   void register_text_sensor(const std::string &id, text_sensor::TextSensor *ts) {
     this->text_sensors_[id] = ts;
   }
@@ -72,12 +80,14 @@ class TestBridge : public Component {
   int client_fd_{-1};
   std::string rx_buffer_;
   std::unordered_map<std::string, lv_obj_t **> widgets_;
+  std::unordered_map<std::string, std::function<lv_obj_t*()>> obj_getters_;
   std::unordered_map<std::string, sensor::Sensor *> sensors_;
   std::unordered_map<std::string, number::Number *> numbers_;
   std::unordered_map<std::string, switch_::Switch *> switches_;
   std::unordered_map<std::string, binary_sensor::BinarySensor *> binary_sensors_;
   std::unordered_map<std::string, select::Select *> selects_;
   std::unordered_map<std::string, climate::Climate *> climates_;
+  std::unordered_map<std::string, datetime::TimeEntity *> time_entities_;
   std::unordered_map<std::string, text_sensor::TextSensor *> text_sensors_;
 
   void process_line(const std::string &line);

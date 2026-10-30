@@ -38,7 +38,7 @@ def openamber_proc():
         time.sleep(0.5)
         cmd = [
             "wsl", "-d", "Debian", "bash", "-c",
-            f"SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy {shlex.quote(wsl_bin)}"
+            f"SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ESPHOME_PCH_ENABLE=0 {shlex.quote(wsl_bin)}"
         ]
         started_proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     else:
@@ -54,6 +54,7 @@ def openamber_proc():
         env = os.environ.copy()
         env["SDL_VIDEODRIVER"] = "dummy"
         env["SDL_AUDIODRIVER"] = "dummy"
+        env["ESPHOME_PCH_ENABLE"] = "0"
         started_proc = subprocess.Popen([bin_path], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     time.sleep(2.0)
@@ -73,8 +74,15 @@ def openamber_proc():
             if os.name == "nt":
                 if wsl_bin:
                     subprocess.run(["wsl", "-u", "root", "-d", "Debian", "pkill", "-9", "-f", wsl_bin], capture_output=True)
+                subprocess.run(["wsl", "-d", "Debian", "bash", "-c", "rm -f ~/.esphome/prefs/openamber-test.prefs"], capture_output=True)
             else:
                 subprocess.run(["pkill", "-9", "-f", bin_path], capture_output=True)
+                pref_file = os.path.expanduser("~/.esphome/prefs/openamber-test.prefs")
+                if os.path.exists(pref_file):
+                    try:
+                        os.remove(pref_file)
+                    except OSError:
+                        pass
 
 
 @pytest.fixture(scope="session")
@@ -101,15 +109,36 @@ def openamber(openamber_proc):
 def clean_system(openamber):
     """Reset system to clean idle state with fully completed initialization."""
     openamber.set_switch("heat_demand_switch", False)
+    openamber.set_switch("default_compressor_frequencies_enabled", False)
+    openamber.set_switch("heat_demand_zone_2_switch", False)
     openamber.set_switch("cool_demand_switch", False)
     openamber.set_switch("emergency_mode_enabled", False)
     openamber.set_switch("dhw_enabled_switch", True)
     openamber.set_switch("dhw_schedule_enabled_switch", False)
+    openamber.set_switch("silent_mode_enabled_switch", False)
+    openamber.set_select("silent_mode_compressor_mode", "Gemiddeld")
+    openamber.set_time("silent_mode_start_time", 23, 0, 0)
+    openamber.set_time("silent_mode_end_time", 7, 0, 0)
+    openamber.set_switch("legio_enabled_switch", True)
     openamber.set_switch("reset_start_timeout_errors_switch", True)
+    openamber.set_switch("mixing_valve_zone1_enabled", False)
+    openamber.set_switch("mixing_valve_zone2_enabled", False)
     openamber.set_binary_sensor("external_heat_demand_wired", False)
+    openamber.set_binary_sensor("external_heat_demand_wired_zone_2", False)
     openamber.set_binary_sensor("external_cool_demand_wired", False)
     openamber.set_binary_sensor("sg_ready_block_mode_active_sensor", False)
     openamber.set_binary_sensor("defrost_active_sensor", False)
+    # Reset heating curves to their numbers.yaml defaults so curve edits in one test do not
+    # silently change the setpoint (and with it the start/stop behaviour) of later tests.
+    for anchor, z1, z2 in (("m10", 35.0, 30.0), ("0", 30.0, 28.0), ("p5", 28.0, 26.0),
+                           ("p10", 27.0, 24.0), ("p15", 25.0, 22.0)):
+        openamber.set_number(f"heat_curve_{anchor}", z1)
+        openamber.set_number(f"heat_curve_z2_{anchor}", z2)
+    # Mocked Modbus registers now keep injected values, so clear them explicitly
+    for reg in ("error_register_2119_raw", "error_register_2120_raw", "error_register_2121_raw", "inside_unit_status_1225_raw"):
+        openamber.set_sensor(reg, 0.0)
+    openamber.set_switch("pump_p0_relay_switch", True)
+    openamber.set_number("backup_heater_degmin_threshold", 50.0)
     openamber.set_number("dhw_setpoint_temperature", 50.0)
     openamber.set_number("dhw_restart_dhw_delta", 5.0)
     openamber.set_sensor("dhw_temperature_tw_sensor", 55.0)
@@ -121,6 +150,7 @@ def clean_system(openamber):
     openamber.set_select("thermostat_mode_select", "Extern")
     openamber.set_select("heat_mode_select", "Stooklijn")
     openamber.set_select("cool_mode_select", "Intern setpoint")
+    openamber.set_select("heat_cool_control_temperature_source_select", "CV-aanvoer (Tc)")
     openamber.set_climate("pid_heat_temperature_control", target_temperature=30.0)
     openamber.set_number("compressor_stop_delta_heating", 2.0)
     openamber.set_number("cooling_setpoint_number", 18.0)

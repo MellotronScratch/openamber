@@ -90,6 +90,43 @@ binary_sensor:
     sorting_group_id: overview
 
 - platform: template
+  id: silent_mode_active_sensor
+  name: "Stille modus actief"
+  device_class: running
+  lambda: |-
+    if (!id(silent_mode_enabled_switch).state)
+    {
+      return false;
+    }
+
+    auto now = id(my_time).now();
+    if (!now.is_valid() || !id(silent_mode_start_time).has_state() || !id(silent_mode_end_time).has_state())
+    {
+      return false;
+    }
+
+    const int now_min   = now.hour * 60 + now.minute;
+    const int start_min = id(silent_mode_start_time).hour * 60 + id(silent_mode_start_time).minute;
+    const int end_min   = id(silent_mode_end_time).hour * 60 + id(silent_mode_end_time).minute;
+
+    bool in_window = false;
+    if (start_min <= end_min) {
+      // same day (e.g. 06:00-22:00)
+      in_window = (now_min >= start_min && now_min <= end_min);
+    } else {
+      // overnight (e.g. 22:00-06:00)
+      in_window = (now_min >= start_min || now_min <= end_min);
+    }
+
+    if (!in_window) {
+      return false;
+    }
+
+    return true;
+  web_server: 
+    sorting_group_id: overview
+
+- platform: template
   id: dhw_active
 
 - platform: template
@@ -102,28 +139,80 @@ binary_sensor:
     - component.update: current_dhw_setpoint_sensor
 
 - platform: template
+  id: external_heat_demand_wired_delayed
+  internal: true
+  lambda: |-
+    return id(external_heat_demand_wired).state;
+  filters:
+    - delayed_off: !lambda |-
+        return (uint32_t)(id(thermostat_off_delay).state * 60000.0f);
+
+- platform: template
+  id: external_heat_demand_wired_zone_2_delayed
+  internal: true
+  lambda: |-
+    return id(external_heat_demand_wired_zone_2).state;
+  filters:
+    - delayed_off: !lambda |-
+        return (uint32_t)(id(thermostat_off_delay).state * 60000.0f);
+
+- platform: template
+  id: external_cool_demand_wired_delayed
+  internal: true
+  lambda: |-
+    return id(external_cool_demand_wired).state;
+  filters:
+    - delayed_off: !lambda |-
+        return (uint32_t)(id(thermostat_off_delay).state * 60000.0f);
+
+- platform: template
+  name: "Warmtevraag Zone 1"
+  id: heat_demand_active_sensor_zone_1
+  device_class: running
+  lambda: |-
+    if (id(sg_ready_block_mode_active_sensor).state || id(error_active).state) {
+      return false;
+    }
+    if (id(thermostat_mode_select).current_option() == "Intern") {
+      return id(climate_controller).action == climate::CLIMATE_ACTION_HEATING;
+    }
+    return id(external_heat_demand_wired_delayed).state || id(heat_demand_switch).state;
+  on_state:
+    - component.update: current_setpoint
+  web_server: 
+    sorting_group_id: overview
+
+- platform: template
+  name: "Warmtevraag Zone 2"
+  id: heat_demand_active_sensor_zone_2
+  device_class: running
+  lambda: |-
+    if (id(sg_ready_block_mode_active_sensor).state || id(error_active).state) {
+      return false;
+    }
+
+    bool mixing_enabled = id(mixing_valve_zone1_enabled).state || id(mixing_valve_zone2_enabled).state;
+    if (!mixing_enabled) {
+      return false;
+    }
+
+    return id(external_heat_demand_wired_zone_2_delayed).state || id(heat_demand_zone_2_switch).state;
+  on_state:
+    - component.update: current_setpoint
+  web_server: 
+    sorting_group_id: overview
+
+- platform: template
   name: "Warmtevraag"
   id: heat_demand_active_sensor
   device_class: running
   lambda: |-
-    if(id(sg_ready_block_mode_active_sensor).state)
-    {
+    if (id(sg_ready_block_mode_active_sensor).state || id(error_active).state) {
       return false;
     }
-
-    if(id(error_active).state)
-    {
-      return false;
-    }
-
-    if (id(thermostat_mode_select).current_option() == "Intern")
-    {
-      return id(climate_controller).action == climate::CLIMATE_ACTION_HEATING;
-    }
-    else
-    {
-      return id(external_heat_demand_wired).state || id(heat_demand_switch).state;
-    }
+    return id(heat_demand_active_sensor_zone_1).state || id(heat_demand_active_sensor_zone_2).state;
+  on_state:
+    - component.update: current_setpoint
   web_server: 
     sorting_group_id: overview
 
@@ -132,29 +221,13 @@ binary_sensor:
   id: cool_demand_active_sensor
   device_class: running
   lambda: |-
-    if(id(sg_ready_block_mode_active_sensor).state)
-    {
+    if (id(sg_ready_block_mode_active_sensor).state || id(error_active).state || id(heat_demand_active_sensor).state) {
       return false;
     }
-
-    if(id(error_active).state)
-    {
-      return false;
-    }
-
-    if(id(heat_demand_active_sensor).state)
-    {
-      return false;
-    }
-
-    if (id(thermostat_mode_select).current_option() == "Intern")
-    {
+    if (id(thermostat_mode_select).current_option() == "Intern") {
       return id(climate_controller).action == climate::CLIMATE_ACTION_COOLING;
     }
-    else
-    {
-      return id(external_cool_demand_wired).state || id(cool_demand_switch).state;
-    }
+    return id(external_cool_demand_wired_delayed).state || id(cool_demand_switch).state;
   on_state:
     - component.update : current_setpoint
   web_server: 
@@ -605,14 +678,52 @@ binary_sensor:
     sorting_group_id: error_codes
 
 - platform: template
+  id: error_flag_f13
+  name: "Storing sensor ruimtetemperatuur (F13)"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (id(thermostat_mode_select).current_option() != "Intern") return false;
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x0001) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_f14
+  name: "Storing sensor tapwatertemperatuur (F14)"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(dhw_enabled_switch).state) return false;
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x0002) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_f15
+  name: "Storing sensor cv-aanvoertemperatuur (F15)"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x0004) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
   id: error_flag_f16
   name: "Storing sensor aanvoertemperatuur Tuo (F16)"
   device_class: problem
   entity_category: diagnostic
   lambda: |-
-    if (!id(error_register_2121_raw).has_state()) return false;
-    const uint16_t raw = (uint16_t) id(error_register_2121_raw).state;
-    return (raw & 0x0200) != 0;
+    bool err_2121 = id(error_register_2121_raw).has_state() && (((uint16_t) id(error_register_2121_raw).state & 0x0200) != 0);
+    bool err_1225 = id(inside_unit_status_1225_raw).has_state() && (((uint16_t) id(inside_unit_status_1225_raw).state & 0x0008) != 0);
+    return err_2121 || err_1225;
   web_server: 
     sorting_group_id: error_codes
 
@@ -622,9 +733,9 @@ binary_sensor:
   device_class: problem
   entity_category: diagnostic
   lambda: |-
-    if (!id(error_register_2121_raw).has_state()) return false;
-    const uint16_t raw = (uint16_t) id(error_register_2121_raw).state;
-    return (raw & 0x0400) != 0;
+    bool err_2121 = id(error_register_2121_raw).has_state() && (((uint16_t) id(error_register_2121_raw).state & 0x0400) != 0);
+    bool err_1225 = id(inside_unit_status_1225_raw).has_state() && (((uint16_t) id(inside_unit_status_1225_raw).state & 0x0010) != 0);
+    return err_2121 || err_1225;
   web_server: 
     sorting_group_id: error_codes
 
@@ -634,9 +745,73 @@ binary_sensor:
   device_class: problem
   entity_category: diagnostic
   lambda: |-
-    if (!id(error_register_2121_raw).has_state()) return false;
-    const uint16_t raw = (uint16_t) id(error_register_2121_raw).state;
-    return (raw & 0x0800) != 0;
+    bool err_2121 = id(error_register_2121_raw).has_state() && (((uint16_t) id(error_register_2121_raw).state & 0x0800) != 0);
+    bool err_1225 = id(inside_unit_status_1225_raw).has_state() && (((uint16_t) id(inside_unit_status_1225_raw).state & 0x0020) != 0);
+    return err_2121 || err_1225;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_f21
+  name: "Storing sensor cv-aanvoertemperatuur zone 1 (F21)"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    bool tv1_used = id(mixing_valve_zone1_enabled).state ||
+                        id(heat_cool_control_temperature_source_select).current_option() == "CV-aanvoer zone 1 (Tv1)";
+    if (!tv1_used) return false;
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x0100) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_f22
+  name: "Storing sensor cv-aanvoertemperatuur zone 2 (F22)"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(mixing_valve_zone2_enabled).state) return false;
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x0200) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_inside_comm_failsafe
+  name: "Communicatie-failsafe binnenunit"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x1000) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_inside_eeprom
+  name: "EEPROM-fout binnenunit"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x4000) != 0;
+  web_server: 
+    sorting_group_id: error_codes
+
+- platform: template
+  id: error_flag_pump_p0_alarm
+  name: "Pompterugmelding P0 alarm"
+  device_class: problem
+  entity_category: diagnostic
+  lambda: |-
+    if (!id(inside_unit_status_1225_raw).has_state()) return false;
+    const uint16_t raw = (uint16_t) id(inside_unit_status_1225_raw).state;
+    return (raw & 0x8000) != 0;
   web_server: 
     sorting_group_id: error_codes
 
@@ -699,6 +874,14 @@ binary_sensor:
     sorting_group_id: error_codes
 
 - platform: template
+  id: error_inside_unit_failsafe
+  name: "Binnenunit failsafe - herstart fout"
+  device_class: problem
+  entity_category: diagnostic
+  web_server:
+    sorting_group_id: error_codes
+
+- platform: template
   id: error_active
   name: "Error actief"
   device_class: problem
@@ -728,14 +911,20 @@ binary_sensor:
            id(error_flag_e07).state ||
            id(error_flag_e08).state ||
            id(error_flag_f10).state ||
+           id(error_flag_f13).state ||
+           id(error_flag_f14).state ||
+           id(error_flag_f15).state ||
            id(error_flag_f16).state ||
            id(error_flag_f17).state ||
            id(error_flag_f18).state ||
+           id(error_flag_f21).state ||
+           id(error_flag_f22).state ||
            id(error_pump_start_timeout).state ||
            id(error_compressor_start_timeout).state ||
            id(error_pump_stop_timeout).state ||
            id(error_modbus_connection_timeout).state ||
-           id(error_three_way_valve_state_timeout).state;
+           id(error_three_way_valve_state_timeout).state ||
+           id(error_inside_unit_failsafe).state;
 
 - platform: template
   id: warning_active
@@ -751,4 +940,7 @@ binary_sensor:
            id(error_flag_p06).state ||
            id(error_flag_p11).state ||
            id(error_flag_p12).state ||
-           id(error_flag_p13).state;
+           id(error_flag_p13).state ||
+           id(error_flag_inside_comm_failsafe).state ||
+           id(error_flag_inside_eeprom).state ||
+           id(error_flag_pump_p0_alarm).state;

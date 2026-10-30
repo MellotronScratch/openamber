@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cmath>
 #include "base_controller.h"
 
 enum class DHWState
@@ -42,11 +43,12 @@ enum class DHWState
 class DHWController : public BaseController<DHWState>
 {
 private:
+  bool rate_window_active_ = false;
   uint32_t last_rate_measured_time_ = 0;
   uint32_t heating_rate_below_min_since_ms_ = 0;
   float last_temperature_rate_ = 0.0f;
   float last_measured_temperature_ = 0.0f;
-  float dhw_pump_settled_time_ = 0.0f;
+  uint32_t dhw_pump_settled_time_ = 0;
   uint32_t pump_flow_missing_since_ms_ = 0;
   uint32_t valve_safety_condition_since_ms_ = 0;
 
@@ -112,6 +114,12 @@ private:
     {
       selected_dhw_compressor_mode = id(dhw_compressor_mode_max).active_index().value() + dhw_mode_max_offset;
     }
+    if (id(silent_mode_active_sensor).state)
+    {
+      int silent_offset = id(compressor_control_select).size() - id(silent_mode_compressor_mode).size();
+      int silent_limit = (int)id(silent_mode_compressor_mode).active_index().value_or(3) + silent_offset;
+      selected_dhw_compressor_mode = std::min(selected_dhw_compressor_mode, silent_limit);
+    }
     return selected_dhw_compressor_mode;
   }
 
@@ -119,8 +127,9 @@ private:
   {
     ESP_LOGI("amber", "Stopping DHW pump.");
     id(dhw_pump_relay_switch).turn_off();
-    dhw_pump_settled_time_ = 0.0f;
+    dhw_pump_settled_time_ = 0;
     heating_rate_below_min_since_ms_ = 0;
+    rate_window_active_ = false;
   }
 
   bool IsPredictedTemperatureAboveTarget()
@@ -140,6 +149,11 @@ private:
   {
     float current_temperature = id(dhw_temperature_tw_sensor).state;
     float avg_rate_c_per_min = id(dhw_backup_current_avg_rate_sensor).state;
+    if (std::isnan(avg_rate_c_per_min))
+    {
+      return current_temperature;
+    }
+
     const float lookahead_min = (float)BACKUP_HEATER_LOOKAHEAD_S / 60.0f;
     float predicted_increase = avg_rate_c_per_min * lookahead_min;
     float predicted_temperature = current_temperature + predicted_increase;
@@ -177,17 +191,25 @@ private:
 
   void CalculateTemperatureIncreaseRate()
   {
-    if(!id(dhw_pump_relay_switch).state)
+    if (!rate_window_active_ || !id(dhw_pump_relay_switch).state)
     {
-      // Don't calculate rate when pump is not active.
+      // Don't calculate rate when pump is not active or baseline not yet initialized.
       return;
     }
 
+    // Average over DHW_HEATING_RATE_WINDOW_S instead of the difference between two 5s updates:
+    // with Tw polled every 15s the per-update rate alternates 0, 0, 3x the real rate, and every
+    // high sample reset the backup heater delay timer.
     float current_temperature = id(dhw_temperature_tw_sensor).state;
     uint32_t now = App.get_loop_component_start_time();
-    float delta_min = (float)(now - last_rate_measured_time_) / 60000.0f;
-    float delta_t = current_temperature - last_measured_temperature_;
-    float rate = (delta_min > 0.01f) ? (delta_t / delta_min) : 0.0f;
+    uint32_t elapsed_ms = now - last_rate_measured_time_;
+    if (elapsed_ms < DHW_HEATING_RATE_WINDOW_S * 1000UL)
+    {
+      return;
+    }
+
+    float delta_min = (float)elapsed_ms / 60000.0f;
+    float rate = (current_temperature - last_measured_temperature_) / delta_min;
     id(dhw_backup_current_avg_rate_sensor).publish_state(rate);
     last_measured_temperature_ = current_temperature;
     last_rate_measured_time_ = now;
@@ -219,6 +241,13 @@ private:
     }
 
     float current_avg_rate = id(dhw_backup_current_avg_rate_sensor).state;
+    if (std::isnan(current_avg_rate))
+    {
+      // No full averaging window yet.
+      heating_rate_below_min_since_ms_ = 0;
+      return false;
+    }
+
     if (current_avg_rate >= min_avg_rate)
     {
       heating_rate_below_min_since_ms_ = 0;
@@ -239,16 +268,6 @@ private:
     }
 
     return false;
-  }
-
-  void StopAndSetIdleState()
-  {
-    compressor_controller_->Stop();
-    pump_controller_->Stop();
-    TurnOffBackupHeater();
-    StopDhwPump();
-    id(dhw_active).publish_state(false);
-    SetNextState(DHWState::IDLE);
   }
 
   bool PerformSafetyChecks()
@@ -342,6 +361,16 @@ public:
         : BaseController(pump_controller, compressor_controller, DHWState::WAIT_FOR_STATE_SWITCH, DHWState::UNKNOWN, DHWState::IDLE) {
           PublishState(StateToString(state_));
         }
+
+  void StopAndSetIdleState()
+  {
+    compressor_controller_->Stop();
+    pump_controller_->Stop();
+    TurnOffBackupHeater();
+    StopDhwPump();
+    id(dhw_active).publish_state(false);
+    SetNextState(DHWState::IDLE);
+  }
 
   void UpdateStateMachine()
   {
@@ -508,6 +537,9 @@ public:
         last_measured_temperature_ = id(dhw_temperature_tw_sensor).state;
         last_rate_measured_time_ = now;
         dhw_pump_settled_time_ = now;
+        rate_window_active_ = true;
+        // Start a fresh averaging window; do not reuse the rate of a previous DHW cycle.
+        id(dhw_backup_current_avg_rate_sensor).publish_state(NAN);
         heating_rate_below_min_since_ms_ = 0;
         SetNextState(id(emergency_mode_enabled).state ? DHWState::BACKUP_HEATER_RUNNING : DHWState::COMPRESSOR_RUNNING);
         break;

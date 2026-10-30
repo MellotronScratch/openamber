@@ -63,6 +63,7 @@
       - lvgl.widget.update:
           id: nav_status_cool_icon
           hidden: !lambda 'return !x;'
+      - script.execute: update_service_diag_summary_ui
 
 - id: !extend dhw_demand_active_sensor
   on_state:
@@ -111,6 +112,21 @@
       - script.execute: update_service_diag_summary_ui
 
 - id: !extend external_heat_demand_wired
+  on_state:
+    then:
+      - script.execute: update_service_diag_summary_ui
+
+- id: !extend external_heat_demand_wired_zone_2
+  on_state:
+    then:
+      - script.execute: update_service_diag_summary_ui
+
+- id: !extend heat_demand_active_sensor_zone_1
+  on_state:
+    then:
+      - script.execute: update_service_diag_summary_ui
+
+- id: !extend heat_demand_active_sensor_zone_2
   on_state:
     then:
       - script.execute: update_service_diag_summary_ui
@@ -330,3 +346,58 @@
   on_state:
     then:
       - script.execute: update_service_errors_ui
+
+- id: !extend error_inside_unit_failsafe
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_f13
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_f14
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_f15
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_f21
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_f22
+  on_state:
+    then:
+      - script.execute: update_service_errors_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_inside_comm_failsafe
+  on_state:
+    then:
+      - script.execute: update_service_warnings_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_inside_eeprom
+  on_state:
+    then:
+      - script.execute: update_service_warnings_ui
+      - script.execute: update_header_alert_icons
+
+- id: !extend error_flag_pump_p0_alarm
+  on_state:
+    then:
+      - script.execute: update_service_warnings_ui
+      - script.execute: update_header_alert_icons
+

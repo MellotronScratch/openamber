@@ -45,12 +45,25 @@ binary_sensor:
 
 - platform: modbus_controller
   modbus_controller_id: modbus_inside_unit
+  id: external_heat_demand_wired_zone_2
+  internal: True
+  name: "Externe warmtevraag Zone 2 (bedraad)"
+  address: 1219
+  reuse_previous_range: true
+  register_type: holding
+  device_class: running
+  web_server: 
+    sorting_group_id: diagnostic
+
+- platform: modbus_controller
+  modbus_controller_id: modbus_inside_unit
   id: sg_ready_b_active_sensor
   internal: True
   name: "SG-Ready B"
   address: 1220
   register_type: holding
   reuse_previous_range: true
+  bitmask: 0x1
   device_class: running
   web_server: 
     sorting_group_id: diagnostic
@@ -58,7 +71,7 @@ binary_sensor:
 - platform: modbus_controller
   modbus_controller_id: modbus_inside_unit
   name: "Pomp P1"
-  internal: True
+  id: pump_p1_active
   address: 1300
   register_type: holding
   device_class: running

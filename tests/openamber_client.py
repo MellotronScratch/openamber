@@ -81,8 +81,20 @@ class OpenAmberClient:
         return self._check_status(res, f"click({widget_id})")
 
     def get_widget(self, widget_id: str) -> Dict[str, Any]:
-        """Query widget status (visible, hidden, text, checked, disabled)."""
-        return self.send_cmd({"cmd": "get_widget", "id": widget_id})
+        """Query widget status (visible, hidden, text, checked, disabled).
+
+        Raises when the widget does not exist, so a typo in a widget id can never
+        make an is_hidden()/not is_visible() assertion pass vacuously.
+        """
+        res = self.send_cmd({"cmd": "get_widget", "id": widget_id})
+        self._check_status(res, f"get_widget({widget_id})")
+        return res
+
+    def set_dropdown(self, widget_id: str, selected: int) -> bool:
+        """Set selected index of a dropdown widget and trigger LV_EVENT_VALUE_CHANGED."""
+        res = self.send_cmd({"cmd": "set_dropdown", "id": widget_id, "selected": int(selected)})
+        time.sleep(0.05)
+        return self._check_status(res, f"set_dropdown({widget_id}, {selected})")
 
     def is_visible(self, widget_id: str) -> bool:
         """Check if widget is visible."""
@@ -93,6 +105,11 @@ class OpenAmberClient:
         """Check if widget is hidden."""
         w = self.get_widget(widget_id)
         return bool(w.get("hidden", True))
+
+    def is_disabled(self, widget_id: str) -> bool:
+        """Check if widget is disabled."""
+        w = self.get_widget(widget_id)
+        return bool(w.get("disabled", False))
 
     def get_label(self, widget_id: str) -> str:
         """Get text of a label widget."""
@@ -123,6 +140,11 @@ class OpenAmberClient:
         """Set the active option of a select entity."""
         res = self.send_cmd({"cmd": "set_select", "id": select_id, "option": str(option)})
         return self._check_status(res, f"set_select({select_id}, {option})")
+
+    def set_time(self, time_id: str, hour: int, minute: int, second: int = 0) -> bool:
+        """Set time on a datetime entity."""
+        res = self.send_cmd({"cmd": "set_time", "id": time_id, "hour": int(hour), "minute": int(minute), "second": int(second)})
+        return self._check_status(res, f"set_time({time_id})")
 
     def set_climate(
         self,
@@ -172,8 +194,14 @@ class OpenAmberClient:
         return self.send_cmd({"cmd": "get_time"})
 
     def get_entity(self, entity_id: str) -> Any:
-        """Get state of any registered entity."""
+        """Get state of any registered entity.
+
+        Raises when the entity does not exist. A missing entity used to return None,
+        which made assertions such as `int(x or 0) == 0` or `x is not True` pass on a typo.
+        A sensor without a value (NaN) still returns None.
+        """
         res = self.send_cmd({"cmd": "get_entity", "id": entity_id})
+        self._check_status(res, f"get_entity({entity_id})")
         if res.get("type") == "climate":
             return res
         return res.get("state")
@@ -197,6 +225,33 @@ class OpenAmberClient:
                 return True
             time.sleep(poll_interval)
         return False
+
+    def eebus_request(self, action: str, **kwargs) -> bool:
+        """Send a fake EEBUS command (boost, dim, limit, connect, disconnect)."""
+        cmd_dict = {"cmd": "eebus_request", "action": action, **kwargs}
+        res = self.send_cmd(cmd_dict)
+        self.step(ms=30)
+        return self._check_status(res, f"eebus_{action}")
+
+    def eebus_request_boost(self, active: bool = True) -> bool:
+        """Request EEBUS boost (e.g. EVCC/CEM optional consumption)."""
+        return self.eebus_request("boost", active=active)
+
+    def eebus_request_dim(self, active: bool = True) -> bool:
+        """Request EEBUS dimming (§14a limit)."""
+        return self.eebus_request("dim", active=active)
+
+    def eebus_set_limit(self, limit_w: float) -> bool:
+        """Set EEBUS power consumption limit in Watts."""
+        return self.eebus_request("limit", limit=limit_w)
+
+    def eebus_connect(self, ems: str = "EVCC (192.168.1.100)") -> bool:
+        """Simulate EEBUS EMS connection."""
+        return self.eebus_request("connect", ems=ems)
+
+    def eebus_disconnect(self) -> bool:
+        """Simulate EEBUS EMS disconnection."""
+        return self.eebus_request("disconnect")
 
     def exit(self):
         """Ask OpenAmber to exit."""

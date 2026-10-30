@@ -1,6 +1,12 @@
 #include "test_bridge.h"
 #include <cerrno>
 
+#if defined(USE_EEBUS_MOCK)
+#include "esphome/components/eebus/eebus_mock.h"
+#elif defined(USE_EEBUS)
+#include "esphome/components/eebus/eebus_component.h"
+#endif
+
 #ifndef _WIN32
 extern "C" {
 uint32_t __real__ZN7esphome6millisEv();
@@ -74,13 +80,13 @@ void TestBridge::setup() {
   }
 
   ESP_LOGI(TAG, "Test automation bridge listening on 127.0.0.1:%d (%zu widgets, %zu sensors, %zu switches registered)", 
-           this->port_, this->widgets_.size(), this->sensors_.size(), this->switches_.size());
+           this->port_, this->widgets_.size() + this->obj_getters_.size(), this->sensors_.size(), this->switches_.size());
 }
 
 void TestBridge::dump_config() {
   ESP_LOGCONFIG(TAG, "TestBridge:");
   ESP_LOGCONFIG(TAG, "  Port: %d", this->port_);
-  ESP_LOGCONFIG(TAG, "  Registered widgets: %zu", this->widgets_.size());
+  ESP_LOGCONFIG(TAG, "  Registered widgets: %zu", this->widgets_.size() + this->obj_getters_.size());
   ESP_LOGCONFIG(TAG, "  Registered sensors: %zu", this->sensors_.size());
   ESP_LOGCONFIG(TAG, "  Registered numbers: %zu", this->numbers_.size());
   ESP_LOGCONFIG(TAG, "  Registered switches: %zu", this->switches_.size());
@@ -215,6 +221,10 @@ lv_obj_t *TestBridge::resolve_widget(const std::string &id) {
   if (it != this->widgets_.end() && it->second != nullptr) {
     return *(it->second);
   }
+  auto it2 = this->obj_getters_.find(id);
+  if (it2 != this->obj_getters_.end()) {
+    return it2->second();
+  }
   return nullptr;
 }
 
@@ -232,6 +242,9 @@ void TestBridge::process_line(const std::string &line) {
         out["status"] = "ok";
         JsonArray arr = out["widgets"].to<JsonArray>();
         for (const auto &kv : this->widgets_) {
+          arr.add(kv.first);
+        }
+        for (const auto &kv : this->obj_getters_) {
           arr.add(kv.first);
         }
       });
@@ -263,7 +276,14 @@ void TestBridge::process_line(const std::string &line) {
       bool checked = lv_obj_has_state(obj, LV_STATE_CHECKED);
 
       std::string text = "";
-      if (lv_obj_check_type(obj, &lv_label_class)) {
+      int selected_index = -1;
+      bool is_table = lv_obj_check_type(obj, &lv_table_class);
+      if (lv_obj_check_type(obj, &lv_dropdown_class)) {
+        selected_index = static_cast<int>(lv_dropdown_get_selected(obj));
+        char buf[128] = {0};
+        lv_dropdown_get_selected_str(obj, buf, sizeof(buf));
+        text = buf;
+      } else if (lv_obj_check_type(obj, &lv_label_class)) {
         const char *t = lv_label_get_text(obj);
         if (t) text = t;
       } else {
@@ -284,8 +304,41 @@ void TestBridge::process_line(const std::string &line) {
         out["disabled"] = disabled;
         out["checked"] = checked;
         out["text"] = text;
+        if (selected_index >= 0) {
+          out["selected_index"] = selected_index;
+        }
+        if (is_table) {
+          JsonArray rows_arr = out["rows"].to<JsonArray>();
+          uint32_t row_cnt = lv_table_get_row_count(obj);
+          uint32_t col_cnt = lv_table_get_column_count(obj);
+          for (uint32_t r = 0; r < row_cnt; r++) {
+            JsonArray row_arr = rows_arr.add<JsonArray>();
+            for (uint32_t c = 0; c < col_cnt; c++) {
+              const char *val = lv_table_get_cell_value(obj, r, c);
+              row_arr.add(val ? val : "");
+            }
+          }
+        }
       });
       this->send_response(resp);
+      return true;
+    }
+
+    if (cmd == "set_dropdown") {
+      std::string id = root["id"] | "";
+      int selected = root["selected"] | 0;
+      lv_obj_t *obj = this->resolve_widget(id);
+      if (obj == nullptr) {
+        this->send_response(build_error_json("Widget not found: " + id));
+        return true;
+      }
+      if (!lv_obj_check_type(obj, &lv_dropdown_class)) {
+        this->send_response(build_error_json("Widget is not a dropdown: " + id));
+        return true;
+      }
+      lv_dropdown_set_selected(obj, selected);
+      lv_obj_send_event(obj, LV_EVENT_VALUE_CHANGED, nullptr);
+      this->send_response("{\"status\":\"ok\"}");
       return true;
     }
 
@@ -478,6 +531,22 @@ void TestBridge::process_line(const std::string &line) {
           return true;
         }
       }
+      auto it_time = this->time_entities_.find(id);
+      if (it_time != this->time_entities_.end() && it_time->second != nullptr) {
+        std::string resp = json::build_json([&](JsonObject out) {
+          out["status"] = "ok";
+          out["type"] = "time";
+          char time_buf[16];
+          snprintf(time_buf, sizeof(time_buf), "%02d:%02d:%02d", it_time->second->hour, it_time->second->minute, it_time->second->second);
+          out["state"] = time_buf;
+          out["hour"] = it_time->second->hour;
+          out["minute"] = it_time->second->minute;
+          out["second"] = it_time->second->second;
+        });
+        this->send_response(resp);
+        return true;
+      }
+
       auto it_sel = this->selects_.find(id);
       if (it_sel != this->selects_.end() && it_sel->second != nullptr) {
         std::string resp = json::build_json([&](JsonObject out) {
@@ -581,6 +650,23 @@ void TestBridge::process_line(const std::string &line) {
       return true;
     }
 
+    if (cmd == "set_time") {
+      std::string id = root["id"] | "";
+      int hour = root["hour"] | 0;
+      int minute = root["minute"] | 0;
+      int second = root["second"] | 0;
+      auto it = this->time_entities_.find(id);
+      if (it != this->time_entities_.end() && it->second != nullptr) {
+        auto call = it->second->make_call();
+        call.set_time(hour, minute, second);
+        call.perform();
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      this->send_response(build_error_json("Time entity not found: " + id));
+      return true;
+    }
+
     if (cmd == "set_climate") {
       std::string id = root["id"] | "";
       auto it = this->climates_.find(id);
@@ -639,6 +725,46 @@ void TestBridge::process_line(const std::string &line) {
     if (cmd == "step") {
       this->send_response("{\"status\":\"ok\"}");
       return true;
+    }
+
+    if (cmd == "fake_eebus" || cmd == "eebus_request") {
+#if defined(USE_EEBUS_MOCK)
+      std::string action = root["action"] | "";
+      if (action == "boost") {
+        bool active = root["active"] | true;
+        eebus::fake_eebus_boost(active);
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      if (action == "dim") {
+        bool active = root["active"] | true;
+        eebus::fake_eebus_dim(active);
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      if (action == "limit") {
+        float limit_w = root["limit"] | 0.0f;
+        eebus::fake_eebus_limit(limit_w);
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      if (action == "connect") {
+        std::string ems = root["ems"] | "EVCC (192.168.1.100)";
+        eebus::fake_eebus_connected(true, ems);
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      if (action == "disconnect") {
+        eebus::fake_eebus_connected(false);
+        this->send_response("{\"status\":\"ok\"}");
+        return true;
+      }
+      this->send_response(build_error_json("Unknown eebus action: " + action));
+      return true;
+#else
+      this->send_response(build_error_json("EEBUS not enabled in this build"));
+      return true;
+#endif
     }
 
     if (cmd == "exit") {

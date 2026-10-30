@@ -55,13 +55,69 @@ private:
 
   void ApplyMixingValvePositions()
   {
-    if (id(mixing_valve_zone1_enabled).state && mixing_valve_zone1_)
+    bool mixing_z1_enabled = id(mixing_valve_zone1_enabled).state;
+    bool mixing_z2_enabled = id(mixing_valve_zone2_enabled).state;
+    if (!mixing_z1_enabled && !mixing_z2_enabled) return;
+
+    bool z1_demand = id(heat_demand_active_sensor_zone_1).state;
+    bool z2_demand = id(heat_demand_active_sensor_zone_2).state;
+    bool frost_protection_active = id(frost_protection_stage1_active).state || id(frost_protection_stage2_active).state;
+
+    float target_z1 = (id(heat_mode_select).current_option() == "Stooklijn")
+                        ? id(heat_curve_calculated_setpoint).state
+                        : id(manual_setpoint).state;
+    float target_z2 = id(heat_curve_z2_calculated_setpoint).state;
+
+    // Zone 1
+    if (mixing_z1_enabled)
     {
-      mixing_valve_zone1_->ApplyValvePosition();
+      if (!z1_demand)
+      {
+        if (frost_protection_active)
+        {
+          mixing_valve_zone1_->OpenValve();
+        }
+        else
+        {
+          mixing_valve_zone1_->CloseValve();
+        }
+        id(pid_mixing_valve_zone1).reset_integral_term();
+      }
+      else if (z2_demand && target_z1 < (target_z2 - 0.1f))
+      {
+        mixing_valve_zone1_->ApplyValvePosition();
+      }
+      else
+      {
+        mixing_valve_zone1_->OpenValve();
+        id(pid_mixing_valve_zone1).reset_integral_term();
+      }
     }
-    if (id(mixing_valve_zone2_enabled).state && mixing_valve_zone2_)
+
+    // Zone 2
+    if (mixing_z2_enabled)
     {
-      mixing_valve_zone2_->ApplyValvePosition();
+      if (!z2_demand)
+      {
+        if (frost_protection_active)
+        {
+          mixing_valve_zone2_->OpenValve();
+        }
+        else
+        {
+          mixing_valve_zone2_->CloseValve();
+        }
+        id(pid_mixing_valve_zone2).reset_integral_term();
+      }
+      else if (z1_demand && target_z2 < (target_z1 - 0.1f))
+      {
+        mixing_valve_zone2_->ApplyValvePosition();
+      }
+      else
+      {
+        mixing_valve_zone2_->OpenValve();
+        id(pid_mixing_valve_zone2).reset_integral_term();
+      }
     }
   }
 
@@ -77,14 +133,27 @@ private:
     }
   }
 
+  void OpenMixingValves()
+  {
+    ResetMixingValvesIntegralTerm();
+    if (id(mixing_valve_zone1_enabled).state)
+    {
+      mixing_valve_zone1_->OpenValve();
+    }
+    if (id(mixing_valve_zone2_enabled).state)
+    {
+      mixing_valve_zone2_->OpenValve();
+    }
+  }
+
   void CloseMixingValves()
   {
     ResetMixingValvesIntegralTerm();
-    if (id(mixing_valve_zone1_enabled).state && mixing_valve_zone1_)
+    if (id(mixing_valve_zone1_enabled).state)
     {
       mixing_valve_zone1_->CloseValve();
     }
-    if (id(mixing_valve_zone2_enabled).state && mixing_valve_zone2_)
+    if (id(mixing_valve_zone2_enabled).state)
     {
       mixing_valve_zone2_->CloseValve();
     }
@@ -162,6 +231,29 @@ private:
     return id(heat_cool_temperature_tc).state;
   }
 
+  int GetMaxAllowedCompressorMode()
+  {
+    auto& active_mode = GetActiveCompressorMode();
+    int mode_offset = id(compressor_control_select).size() - active_mode.size();
+    if (IsCoolingDemand())
+    {
+      // Cooling maximum range is limited to make the mode selection based on the lower frequencies, maximum compressor modes should not be needed for cooling.
+      mode_offset -= 3;
+    }
+    int max_allowed = (int)active_mode.active_index().value() + mode_offset;
+    if (id(silent_mode_active_sensor).state)
+    {
+      int silent_offset = id(compressor_control_select).size() - id(silent_mode_compressor_mode).size();
+      if (IsCoolingDemand())
+      {
+        silent_offset -= 3;
+      }
+      int silent_limit = (int)id(silent_mode_compressor_mode).active_index().value_or(3) + silent_offset;
+      max_allowed = std::min(max_allowed, silent_limit);
+    }
+    return max_allowed;
+  }
+
   int MapPIDToCompressorMode()
   {
     float pid = GetPIDValue();
@@ -169,14 +261,7 @@ private:
     if (raw > 1.0f)
       raw = 1.0f;
 
-    auto& active_mode = GetActiveCompressorMode();
-    int mode_offset = id(compressor_control_select).size() - active_mode.size();
-    if(IsCoolingDemand())
-    {
-      // Cooling maximum range is limited to make the mode selection based on the lower frequencies, maximum compressor modes should not be needed for cooling.
-      mode_offset -= 3;
-    }
-    int amount_of_modes = active_mode.active_index().value() + mode_offset;
+    int amount_of_modes = GetMaxAllowedCompressorMode();
     int desired_mode = (int)roundf(raw * (amount_of_modes - 1)) + 1;
     return std::max(1, std::min(desired_mode, (int)amount_of_modes));
   }
@@ -207,9 +292,7 @@ private:
     }
 
     // Cap by the user-selected compressor mode
-    auto& active_mode = GetActiveCompressorMode();
-    int mode_offset = id(compressor_control_select).size() - active_mode.size();
-    int max_allowed = (int)active_mode.active_index().value() + mode_offset;
+    int max_allowed = GetMaxAllowedCompressorMode();
     return std::min(start_compressor_frequency_mode, max_allowed);
   }
 
@@ -233,8 +316,7 @@ private:
     backup_degmin_last_ms_ = now;
     const float dt_min = (float)dt_ms / 60000.0f;
 
-    int mode_offset = id(compressor_control_select).size() - id(heat_compressor_mode).size();
-    int max_compressor_mode = id(heat_compressor_mode).active_index().value() + mode_offset;
+    int max_compressor_mode = GetMaxAllowedCompressorMode();
     bool is_at_max_mode = id(compressor_control_select).active_index().value() >= max_compressor_mode;
 
     // Reset accumulated degmin if there is no difference or we are not at max compressor mode
@@ -288,6 +370,7 @@ private:
   void ResetAccumulatedDegMin()
   {
     accumulated_backup_degmin_ = 0.0f;
+    id(backup_heater_degmin_current_sensor).publish_state(0.0f);
   }
 
   bool HasPumpDemand()
@@ -362,14 +445,6 @@ private:
     return true;
   }
 
-  void StopAndSetIdleState()
-  {
-    compressor_controller_->Stop();
-    TurnOffBackupHeater();
-    StopPumps();
-    CloseMixingValves();
-    SetNextState(HeatCoolState::IDLE);
-  }
 
   bool PerformSafetyChecks()
   {
@@ -422,6 +497,7 @@ private:
     cool_call.set_mode(climate_mode);
     cool_call.perform();
    }
+  
 public:
   HeatCoolController(PumpController* pump_controller, CompressorController* compressor_controller,
                      MixingValveActuator* mv_zone1, MixingValveActuator* mv_zone2)
@@ -430,6 +506,15 @@ public:
       mixing_valve_zone2_ = mv_zone2;
       PublishState(StateToString(state_));
     }
+
+  void StopAndSetIdleState()
+  {
+    compressor_controller_->Stop();
+    TurnOffBackupHeater();
+    StopPumps();
+    CloseMixingValves();
+    SetNextState(HeatCoolState::IDLE);
+  }
 
   void SetHeatPIDValue(float pid_value)
   {
@@ -456,16 +541,9 @@ public:
     const uint32_t now = App.get_loop_component_start_time();
     int desired_compressor_mode = MapPIDToCompressorMode();
     auto current_compressor_mode = id(compressor_control_select).active_index().value();
+    int max_allowed = GetMaxAllowedCompressorMode();
     float current_temperature = GetControlTemperature();
     float target = GetPidController().target_temperature;
-    float dt = current_temperature - target;
-
-    // Deadband on control temperature to avoid too frequent changes around setpoint
-    if (fabsf(dt) < DEAD_BAND_DT)
-    {
-      ESP_LOGI("amber", "ΔT=%.2f°C within deadband, compressor mode remains at %d", dt, current_compressor_mode);
-      return current_compressor_mode;
-    }
 
     // Guard: never modulate up when temperature has already overshot the setpoint
     const float TEMP_MARGIN = 0.3f;
@@ -478,9 +556,7 @@ public:
       return current_compressor_mode;
     }
 
-    auto& active_mode = GetActiveCompressorMode();
-    int mode_offset = id(compressor_control_select).size() - active_mode.size();
-    int capped_mode_index = std::min(desired_compressor_mode, (int)active_mode.active_index().value() + mode_offset);
+    int capped_mode_index = std::min(desired_compressor_mode, max_allowed);
 
     ESP_LOGI("amber", "PID %.2f -> mode %d (previous mode %d)", GetPIDValue(), capped_mode_index, current_compressor_mode);
     return capped_mode_index;
@@ -524,6 +600,34 @@ public:
     SetNextState(HeatCoolState::WAIT_COMPRESSOR_STOP);
   }
 
+  void OnStateEnter(HeatCoolState new_state) override
+  {
+    switch (new_state)
+    {
+      case HeatCoolState::PUMP_RUNNING:
+      {
+        bool frost_protection = id(frost_protection_stage1_active).state || id(frost_protection_stage2_active).state;
+        bool frost_protection_without_heat_demand = frost_protection && !id(heat_demand_active_sensor_zone_1).state && !id(heat_demand_active_sensor_zone_2).state;
+        if (IsCoolingDemand() || frost_protection_without_heat_demand)
+        {
+          OpenMixingValves();
+        }
+        break;
+      }
+
+      case HeatCoolState::COMPRESSOR_RUNNING:
+        backup_degmin_last_ms_ = App.get_loop_component_start_time();
+        break;
+
+      case HeatCoolState::WAIT_BACKUP_HEATER_RUNNING:
+        ResetAccumulatedDegMin();
+        break;
+
+      default:
+        break;
+    }
+  }
+
   void UpdateStateMachine()
   {
     uint32_t now = App.get_loop_component_start_time();
@@ -544,14 +648,15 @@ public:
 
         if(!HasPumpDemand())
         {
+          StopPumpP1IfNeeded();
           break;
         }
 
+        StartPumpP1IfNeeded();
         // Start pump on interval, without the pump running we cannot determine if there is actual compressor demand as Tc can change.
         if (pump_controller_->ShouldStartNextPumpCycle())
         {
           pump_controller_->Start();
-          StartPumpP1IfNeeded();
           SetNextState(HeatCoolState::WAIT_PUMP_RUNNING);
         }
         break;
@@ -583,7 +688,7 @@ public:
         pump_controller_->ApplySpeedChangeIfNeeded(false);
 
         // Stop if there is no compressor demand or the compressor is not allowed to start and pump interval is finished.
-        if ((!IsCompressorAllowedToStart() || !HasCompressorDemand()) && pump_controller_->IsIntervalCycleFinished())
+        if ((!HasCompressorDemand() || !IsCompressorAllowedToStart()) && pump_controller_->IsIntervalCycleFinished())
         {
           ESP_LOGI("amber", "Stopping pump (interval cycle finished)");
           StopPumps();
@@ -605,19 +710,6 @@ public:
 
         SetWorkingMode(IsCoolingDemand() ? WORKING_MODE_COOLING : WORKING_MODE_HEATING);
         SetPidController(IsCoolingDemand() ? climate::CLIMATE_MODE_COOL : climate::CLIMATE_MODE_HEAT);
-        
-        // Open valves if cooling
-        if (IsWorkingMode(WORKING_MODE_COOLING))
-        {
-          if (id(mixing_valve_zone1_enabled).state && mixing_valve_zone1_)
-          {
-            mixing_valve_zone1_->OpenValve();
-          }
-          if (id(mixing_valve_zone2_enabled).state && mixing_valve_zone2_)
-          {
-            mixing_valve_zone2_->OpenValve();
-          }
-        }
 
         if(id(emergency_mode_enabled).state)
         {
@@ -668,7 +760,6 @@ public:
 
         if (compressor_controller_->HasPassedSoftStartDuration())
         {
-          backup_degmin_last_ms_ = App.get_loop_component_start_time();
           SetNextState(HeatCoolState::COMPRESSOR_RUNNING);
         }
         break;
@@ -724,7 +815,6 @@ public:
           if(IsAccumulatedDegreeMinutesReached())
           {
             TurnOnBackupHeater();
-            ResetAccumulatedDegMin();
             SetNextState(HeatCoolState::WAIT_BACKUP_HEATER_RUNNING);
             break;
           }
@@ -889,7 +979,7 @@ public:
   }
 
   void StopPumpP1IfNeeded()
-  {
+  {  
     if(id(pump_p1_enabled).state && id(pump_p1_relay_switch).state)
     {
       ESP_LOGI("amber", "Stopping pump P1");

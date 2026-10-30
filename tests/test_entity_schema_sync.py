@@ -7,6 +7,7 @@ Verifies:
 4. Parity: Hardware heat pump entities mocked in simulator correspond to physical Modbus registers.
 5. UI Bindings integrity: All entities extended in src/openamber/ui/bindings/ exist in Core, Modbus, or Mock.
 6. Package configuration integrity: Packages include required domain packages for production and simulator.
+7. Modbus register 1220 bitmask mapping (SG-Ready B with bitmask 0x1).
 """
 
 import os
@@ -64,6 +65,12 @@ def extract_entity_ids(yaml_path):
                     # If ID is wrapped in an extend tag or object, get string
                     if isinstance(entity_id, str):
                         entities[entity_id] = domain
+        elif isinstance(items, dict):
+            for sub_key, sub_item in items.items():
+                if isinstance(sub_item, dict) and "id" in sub_item:
+                    entity_id = sub_item["id"]
+                    if isinstance(entity_id, str):
+                        entities[entity_id] = f"{domain}.{sub_key}"
     return entities
 
 
@@ -175,6 +182,11 @@ def test_hardware_mocks_correspond_to_physical_modbus_or_subsystems():
         "current_water_temperature_tc_sensor",
         "outdoor_temperature_tp_sensor",
         "water_flow_rate",
+        "eebus_connected_sensor",
+        "eebus_ems_sensor",
+        "eebus_power_limit_sensor",
+        "eebus_ski",
+        "eebus_status_sensor",
     }
 
     mock_ids = set(mock_entities.keys())
@@ -241,3 +253,27 @@ def test_package_configuration_integrity():
     assert "core_package.yaml" in virtual_content, "openamber-virtual-display.yaml must package core_package.yaml"
     assert "mock_entities.yaml" in virtual_content, "openamber-virtual-display.yaml must package mock_entities.yaml"
     assert "modbus_package.yaml" not in virtual_content, "openamber-virtual-display.yaml must NOT include physical Modbus IO"
+
+
+def test_register_1220_inside_unit_inputs_bitmask():
+    """Verify that Inside Unit register 1220 has bitmask 0x1 for SG-Ready B (PE6)."""
+    modbus_binary_sensors_file = os.path.join(MODBUS_DIR, "binary_sensors.yaml")
+    with open(modbus_binary_sensors_file, "r", encoding="utf-8") as f:
+        data = yaml.load(f, Loader=ESPHomeYamlLoader)
+
+    reg_1220_sensors = [
+        s for s in data.get("binary_sensor", [])
+        if s.get("address") == 1220 and s.get("modbus_controller_id") == "modbus_inside_unit"
+    ]
+    assert len(reg_1220_sensors) == 1, f"Expected 1 binary sensor on register 1220, found {len(reg_1220_sensors)}"
+
+    sg_b = reg_1220_sensors[0]
+    assert sg_b.get("id") == "sg_ready_b_active_sensor"
+    assert sg_b.get("bitmask") == 0x1
+    assert sg_b.get("reuse_previous_range") is True
+
+    # Verify mock exists in mock_entities.yaml
+    mock_entities = get_mock_entities()
+    assert "sg_ready_b_active_sensor" in mock_entities
+    assert "inside_unit_pe14_input" not in mock_entities
+    assert "inside_unit_pe15_input" not in mock_entities

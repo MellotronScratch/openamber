@@ -91,15 +91,6 @@ output:
     pin: GPIO15
     id: backlight
 
-switch:
-  - platform: gpio
-    name: backlight switch
-    pin:
-      ch422g: ch422g_hub
-      number: 2
-    restore_mode: ALWAYS_ON
-    internal: true
-
 touchscreen:
   - platform: gt911
     address: 0x5D
@@ -131,6 +122,7 @@ api:
     - lvgl.widget.update:
         id: nav_status_ha_icon
         text_color: 0xEF4444
+
 
 interval:
   - interval: 700ms
