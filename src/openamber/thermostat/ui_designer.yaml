@@ -1,0 +1,279 @@
+# =====================================================================
+# Thermostaat - GUI uit de LVGL Designer (lettertypen, kleuren, pagina's)
+# Dit bestand mag je in zijn geheel vervangen door een nieuwe export uit de Designer.
+#   canvas_2 = Home (standaard)   canvas_5 = Overview   canvas_11 = Koppelen
+# Handmatig in openamber-thermostat.yaml (dus niet hier): lvgl.buffer_size.
+# Let op in de Designer: verwijder ongebruikte lettertypen, haal "hidden" van
+# overview_canvas uit, en zet ergens een klein verborgen label met de sneeuwvlok
+# (mdi_icons_40) zodat dat symbool in de lettertypelijst blijft.
+# =====================================================================
+
+font:
+  # >>> LVGL Designer — managed font items >>>
+  - file: "gfonts://Quicksand"
+    id: quicksand_32
+    size: 32
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file:
+      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+      type: web
+    id: mdi_icons_40
+    size: 40
+    glyphs: [
+      "\U000F0028",  # Alert Circle
+      "\U000F0F54",  # Home Thermostat
+      "\U000F0393",  # Thermostat
+      "\U000F1B29",  # Faucet
+      "\U000F0238",  # Fire
+      "\U000F0ED5",  # Bacteria
+      "\U000F0717",  # Snowflake
+    ]
+  - file:
+      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+      type: web
+    id: mdi_icons_63
+    size: 63
+    glyphs: [
+      "\U000F0F54",  # Home Thermostat
+    ]
+  # <<< end managed font <<<
+color:
+  - id: color_black
+    hex: "0A0A0A"
+  - id: color_white
+    hex: "FFFFFF"
+  - id: color_gray
+    hex: "AAAAAA"
+  - id: color_orange
+    hex: "FFB000"
+  - id: color_red
+    hex: "FF4500"
+  - id: color_blue
+    hex: "00A8FF"
+  - id: color_green
+    hex: "2ECC71"
+  - id: color_dark_red
+    hex: "330000"
+
+# >>> LVGL Designer - generated from the canvas. >>>
+# This block is regenerated from the canvas - edits here are not preserved.
+lvgl:
+  top_layer:
+    bg_color: color_black
+    scrollbar_mode: "OFF"
+  pages:
+    - id: canvas_2
+      bg_color: 0x111827
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - arc:
+            id: thermostat_arc_setpoint
+            x: 0
+            y: 0
+            width: 480
+            height: 480
+            align: CENTER
+            value: 50
+            min_value: 0
+            max_value: 100
+            adjustable: true
+            start_angle: 135
+            end_angle: 45
+            arc_color: 0x2B2B2B
+            arc_width: 16
+            arc_opa: 100%
+            indicator:
+              arc_color: 0xFDC83E
+              arc_width: 16
+              arc_opa: 87%
+              arc_rounded: true
+            knob:
+              bg_color: 0xFE8929
+              pad_all: 5
+            radius: 11
+            pad_all: 13
+            blur_radius: 8
+            blur_backdrop: true
+
+        - label:
+            id: thermostat_label_setpoint
+            x: 270
+            y: 176
+            width: 95
+            height: 55
+            text: "99,9"
+            text_color: 0xFFFFFF
+
+        - label:
+            id: label_icon_home
+            x: 208
+            y: 395
+            width: 65
+            height: 60
+            text: "\U000F0F54"
+            text_font: mdi_icons_63
+            text_align: CENTER
+            text_color: 0xFFFFFF
+
+    - id: canvas_5
+      bg_color: 0x283351
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - obj:
+            id: overview_canvas
+            x: 0
+            y: 0
+            width: 425
+            height: 425
+            align: CENTER
+            hidden: false
+            bg_color: 0xFEF7FF
+            border_width: 0
+            border_opa: 0%
+            radius: 999
+            outline_width: 11
+            outline_color: 0xFEF7FF
+            outline_pad: 3
+            pad_all: 3
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: overview_icon_errorwarning
+                  x: 190
+                  y: 224
+                  width: 40
+                  height: 40
+                  text: "\U000F0028"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_roomtemp
+                  x: 139
+                  y: 83
+                  width: 40
+                  height: 40
+                  text: "\U000F0F54"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x080808
+              - label:
+                  id: overview_label_roomtemp
+                  x: 186
+                  y: 83
+                  width: 115
+                  height: 40
+                  text: "99,9˚C"
+                  text_color: 0x080808
+                  text_align: LEFT
+                  text_font: quicksand_32
+              - label:
+                  id: overview_icon_setpoint
+                  x: 139
+                  y: 130
+                  width: 40
+                  height: 40
+                  text: "\U000F0393"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_tw
+                  x: 139
+                  y: 177
+                  width: 40
+                  height: 40
+                  text: "\U000F1B29"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x242424
+              - label:
+                  id: overview_label_tw
+                  x: 186
+                  y: 177
+                  width: 110
+                  height: 40
+                  text: "99,9˚C"
+                  text_color: 0x000000
+                  text_align: LEFT
+                  text_font: quicksand_32
+              - label:
+                  id: overview_label_setpoint
+                  x: 186
+                  y: 130
+                  width: 120
+                  height: 40
+                  text: "99,9˚C"
+                  text_color: 0x000000
+                  text_align: LEFT
+                  text_font: quicksand_32
+              - label:
+                  id: overview_icon_heatcool
+                  x: 146
+                  y: 224
+                  width: 40
+                  height: 40
+                  text: "\U000F0238"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0xFF0000
+              - label:
+                  id: overview_icon_leg
+                  x: 240
+                  y: 224
+                  text: "\U000F0ED5"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+
+    - id: canvas_11
+      bg_color: 0x111827
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - label:
+            id: pair_label_title
+            x: 205
+            y: 70
+            text: "Koppelen"
+            text_color: 0xFFFFFF
+
+        - label:
+            id: pair_label_status
+            x: 148
+            y: 115
+            text: "Zoeken naar OpenAmber"
+            text_color: 0xFFFFFF
+
+        - roller:
+            id: pair_roller
+            x: 158
+            y: 160
+            width: 165
+            height: 51
+            options:
+              - "Option 1"
+              - "Option 2"
+            visible_row_count: 3
+            text_font: montserrat_16
+
+        - label:
+            id: pair_label_hint
+            x: 91
+            y: 295
+            text: "Draai om te kiezen, druk om te koppelen"
+            text_color: 0xFFFFFF
+
+        - spinner:
+            id: pair_spinner
+            x: 216
+            y: 345
+            width: 60
+            height: 60
+            spin_time: 1000ms
+            arc_length: 60deg
+# <<< end LVGL Designer block <<<
+

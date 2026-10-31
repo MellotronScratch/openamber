@@ -18,7 +18,7 @@
 # Opbouw van dit bestand:
 #   1. Basis          2. GPIO-overzicht   3. Hardware
 #   4. Sensoren       5. Bediening        6. Scripts
-#   7. ESP-NOW        8. Lettertypen, kleuren en LVGL-pagina's (Home en Overview)
+#   7. ESP-NOW        8. Scherm (LVGL; pagina's en scripts in thermostat/)
 # =====================================================================
 
 # ---------------------------------------------------------------------
@@ -68,6 +68,12 @@ esphome:
         - lvgl.page.show: canvas_2           # Home is de startpagina
         # Statusicoontjes op Overview: kleur, symbool en zichtbaarheid volgen de status van OpenAmber
         - script.execute: update_status_icons
+        # TIJDELIJKE LED-TEST (daarna weghalen): na 1 s de ledring met een eigen kleur per led
+        - delay: 1s
+        - light.turn_on:
+            id: status_leds
+            brightness: 60%
+            effect: "LED test"
         # Nog niet gekoppeld? Open dan na een paar seconden vanzelf de koppelpagina
         - delay: 3s
         - if:
@@ -100,9 +106,9 @@ api:
   encryption:
     key: "aYEOmndEDcqJUtjLSYFjcyZKx8FL1n3p5KV78sW+m3M="
 
-web_server:                       # firmware bijwerken via de browser: http://<ip-van-de-thermostaat>
-  port: 80
-  version: 3                      # geen wachtwoord: iedereen op je netwerk kan de pagina openen
+#web_server:                       # firmware bijwerken via de browser: http://<ip-van-de-thermostaat>
+#  port: 80
+#  version: 3                      # geen wachtwoord: iedereen op je netwerk kan de pagina openen
 
 ota:
   - platform: esphome
@@ -183,6 +189,17 @@ light:
     id: status_leds
     name: "Status LEDs"
     default_transition_length: 300ms
+    effects:
+      - addressable_lambda:       # TIJDELIJKE TEST: elke led een eigen kleur, om de volgorde van de ring te bepalen
+          name: "LED test"
+          update_interval: 1s
+          lambda: |-
+            // index 0..12: rood, oranje, geel, lichtgroen, groen, turkoois, cyaan, azuurblauw, blauw, paars, magenta, roze, wit
+            static const uint32_t kleur[13] = {
+              0xFF0000, 0xFF8000, 0xFFFF00, 0x80FF00, 0x00FF00, 0x00FF80, 0x00FFFF,
+              0x0080FF, 0x0000FF, 0x8000FF, 0xFF00FF, 0xFF0080, 0xFFFFFF };
+            for (int i = 0; i < it.size() && i < 13; i++)
+              it[i] = Color((kleur[i] >> 16) & 0xFF, (kleur[i] >> 8) & 0xFF, kleur[i] & 0xFF);
 
 display:
   - platform: mipi_rgb
@@ -688,48 +705,6 @@ time:
 # ---------------------------------------------------------------------
 script:
   # Vergelijkt de code van OpenAmber met de eigen (ingetypte of gekozen) code
-  - id: update_status_icons       # zet symbool, kleur en zichtbaarheid van de statusicoontjes op Overview
-    mode: restart
-    then:
-      - lambda: |-
-          auto on = [](binary_sensor::BinarySensor *b) { return b->has_state() && b->state; };
-          // Verwarmen / koelen / standby (zelfde plek, ander symbool en kleur)
-          if (on(id(remote_cd))) {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0717");               // sneeuwvlok
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0x00A8FF), 0);
-          } else if (on(id(remote_wv))) {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0238");               // vlam
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0xFF6A00), 0);
-          } else {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0238");               // vlam, grijs
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0x808080), 0);
-          }
-          // Fout (rood) gaat voor waarschuwing (oranje); niets aan de hand = verborgen
-          if (on(id(remote_err))) {
-            lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFF0000), 0);
-            lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          } else if (on(id(remote_warn))) {
-            lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFFA500), 0);
-            lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          }
-          // Tapwater: alleen zichtbaar als aanwezig; blauw als tapwater bezig is, anders grijs
-          if (on(id(remote_twa))) {
-            bool bezig = on(id(remote_da)) || on(id(remote_twp)) || on(id(remote_twv));
-            lv_obj_set_style_text_color(id(overview_icon_tw), lv_color_hex(bezig ? 0x00A8FF : 0x808080), 0);
-            lv_obj_clear_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
-          }
-          // Legionellarun: bacterie alleen tijdens de run
-          if (on(id(remote_twa)) && on(id(remote_lega))) {
-            lv_obj_set_style_text_color(id(overview_icon_leg), lv_color_hex(0x2ECC71), 0);
-            lv_obj_clear_flag(id(overview_icon_leg), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_leg), LV_OBJ_FLAG_HIDDEN);
-          }
-
   - id: pin_check
     then:
       - lambda: |-
@@ -742,6 +717,7 @@ script:
                        lroundf(id(remote_pin).state) == mine;
 
   # Korte druk op de knop: op de koppelpagina bevestigen, anders tussen Home en Overview wisselen
+
   - id: button_short
     then:
       - if:
@@ -753,68 +729,7 @@ script:
             - script.execute: toggle_overview
 
   # Koppelpagina openen; de knop kiest dan uit de lijst
-  - id: show_pair
-    then:
-      - globals.set:
-          id: knob_context
-          value: '3'
-      - lvgl.page.show: canvas_11
-      - script.execute: pair_refresh
 
-  # Lijst met gevonden OpenAmbers bijwerken (elke 2 s zolang de koppelpagina open is)
-  - id: pair_refresh
-    mode: restart
-    then:
-      - lambda: |-
-          // Codes die langer dan 30 s niet meer zijn gehoord, verdwijnen uit de lijst
-          uint32_t now = millis();
-          for (int i = (int) id(found_codes).size() - 1; i >= 0; i--) {
-            if (now - id(found_seen)[i] > 30000) {
-              id(found_codes).erase(id(found_codes).begin() + i);
-              id(found_seen).erase(id(found_seen).begin() + i);
-            }
-          }
-          // Opties voor de roller: elke gevonden code op een eigen regel, onderaan Annuleren
-          std::string opts;
-          for (int c : id(found_codes)) {
-            char b[8];
-            snprintf(b, sizeof(b), "%06X", c);
-            opts += b;
-            opts += "\n";
-          }
-          opts += "Annuleren";
-          // Alleen bijwerken als de lijst verandert, anders springt de selectie steeds terug
-          static std::string last;
-          lv_obj_t *r = id(pair_roller)->obj;
-          if (opts != last) {
-            int n = (int) id(found_codes).size() + 1;
-            int sel = (int) lv_roller_get_selected(r);
-            lv_roller_set_options(r, opts.c_str(), LV_ROLLER_MODE_NORMAL);
-            if (sel > n - 1) sel = n - 1;
-            lv_roller_set_selected(r, sel, LV_ANIM_OFF);
-            last = opts;
-          }
-          bool leeg = id(found_codes).empty();
-          lv_label_set_text(id(pair_label_status), leeg ? "Zoeken naar OpenAmber..." : "Kies je OpenAmber");
-          // Draaiend bolletje alleen zolang er nog niets is gevonden
-          if (leeg) lv_obj_clear_flag(id(pair_spinner), LV_OBJ_FLAG_HIDDEN);
-          else      lv_obj_add_flag(id(pair_spinner), LV_OBJ_FLAG_HIDDEN);
-
-  # Keuze in de lijst bevestigen: code bewaren (of annuleren) en terug naar Home
-  - id: pair_confirm
-    then:
-      - lambda: |-
-          int sel = (int) lv_roller_get_selected(id(pair_roller)->obj);
-          int n = (int) id(found_codes).size();
-          if (sel >= 0 && sel < n) {                  // de laatste regel is Annuleren
-            char b[8];
-            snprintf(b, sizeof(b), "%06X", id(found_codes)[sel]);
-            id(pair_code).make_call().set_value(b).perform();
-          }
-      - script.execute: show_home
-
-  # Bouwt het commando (volgnummer + modus + setpoints) 600 ms na de laatste
-  # draai-impuls of moduskeuze en publiceert het in de sensor "cmd".
   - id: send_command
     mode: restart
     then:
@@ -834,6 +749,7 @@ script:
 
   # Zet de vlag "gebruiker draait" 3 s na de laatste klik weer uit.
   # Zolang de vlag aan staat, negeren we setpoints en modus die OpenAmber terugstuurt.
+
   - id: release_adjusting
     mode: restart
     then:
@@ -843,6 +759,7 @@ script:
           value: 'false'
 
   # Scherm en ledring 60 s aan na bediening of start
+
   - id: reset_backlight_timer
     mode: restart
     then:
@@ -868,55 +785,7 @@ script:
   # (koelen: hoog setpoint, anders laag setpoint). De boog loopt van 0 tot 100 en toont
   # waar het setpoint binnen het bereik van de modus ligt:
   #   verwarmen 15-25 graden (target_low), koelen 18-30 graden (target_high).
-  - id: refresh_setpoint_ui
-    then:
-      - lvgl.arc.update:
-          id: thermostat_arc_setpoint
-          value: !lambda |-
-            bool koelen = (id(mode_code) == 2);
-            float sp = koelen ? id(target_high).state : id(target_low).state;
-            float min_sp = koelen ? 18.0f : 15.0f;
-            float max_sp = koelen ? 30.0f : 25.0f;
-            if (std::isnan(sp)) return 0;
-            float pct = (sp - min_sp) / (max_sp - min_sp) * 100.0f;
-            if (pct < 0) pct = 0;
-            if (pct > 100) pct = 100;
-            return (int) lroundf(pct);
-      # Home: grote doeltemperatuur
-      - lvgl.label.update:
-          id: thermostat_label_setpoint
-          text: !lambda |-
-            float sp = (id(mode_code) == 2) ? id(target_high).state : id(target_low).state;
-            if (std::isnan(sp)) return std::string("--");
-            std::string s = str_sprintf("%.1f˚C", sp);
-            for (char &c : s) if (c == '.') c = ',';
-            return s;
-      # Overview: doeltemperatuur
-      - lvgl.label.update:
-          id: overview_label_setpoint
-          text: !lambda |-
-            float sp = (id(mode_code) == 2) ? id(target_high).state : id(target_low).state;
-            if (std::isnan(sp)) return std::string("--");
-            std::string s = str_sprintf("%.1f˚C", sp);
-            for (char &c : s) if (c == '.') c = ',';
-            return s;
 
-  # Pagina's wisselen en de draaiknop de bijbehorende context geven
-  - id: show_home
-    then:
-      - globals.set:
-          id: knob_context
-          value: '0'
-      - lvgl.page.show: canvas_2
-
-  - id: show_overview
-    then:
-      - globals.set:
-          id: knob_context
-          value: '1'
-      - lvgl.page.show: canvas_5
-
-  # Klik op de knop: vanaf Home naar Overview, vanaf elk ander scherm terug naar Home
   - id: toggle_overview
     then:
       - if:
@@ -928,91 +797,6 @@ script:
             - script.execute: show_home
 
   # Wordt bij elke klik van de draaiknop aangeroepen; delta is +1 (rechtsom) of -1 (linksom)
-  - id: knob_step
-    parameters:
-      delta: int
-    then:
-      # Is het scherm donker (na de slaaptimer)? Dan alleen wakker maken, niets verstellen.
-      - if:
-          condition:
-            light.is_off: backlight
-          then:
-            - script.execute: reset_backlight_timer
-            - script.stop: knob_step
-      - script.execute: reset_backlight_timer
-
-      # Context 0 = Home: setpoint van de gekozen modus instellen
-      # (koelen: hoog setpoint, anders laag setpoint, zoals het scherm van OpenAmber)
-      - if:
-          condition:
-            lambda: 'return id(knob_context) == 0;'
-          then:
-            - globals.set:
-                id: user_is_adjusting
-                value: 'true'
-            - if:
-                condition:
-                  lambda: 'return id(mode_code) == 2;'
-                then:
-                  - if:
-                      condition:
-                        lambda: 'return delta > 0;'
-                      then:
-                        - number.increment:
-                            id: target_high
-                            cycle: false
-                      else:
-                        - number.decrement:
-                            id: target_high
-                            cycle: false
-                else:
-                  - if:
-                      condition:
-                        lambda: 'return delta > 0;'
-                      then:
-                        - number.increment:
-                            id: target_low
-                            cycle: false
-                      else:
-                        - number.decrement:
-                            id: target_low
-                            cycle: false
-            - script.execute: send_command
-            - script.execute: release_adjusting
-
-      # Context 1 = Overview: hier komt later de navigatie door het menu
-      # (nu doet draaien hier niets)
-
-      # Context 2 = modus kiezen (Uit / Verwarmen / Koelen); nog niet bereikbaar vanuit de GUI.
-      # De keuze verstuurt zelf een commando via de set_action van de select.
-      - if:
-          condition:
-            lambda: 'return id(knob_context) == 2;'
-          then:
-            - if:
-                condition:
-                  lambda: 'return delta > 0;'
-                then:
-                  - select.next:
-                      id: hp_mode
-                      cycle: false
-                else:
-                  - select.previous:
-                      id: hp_mode
-                      cycle: false
-
-      # Context 3 = koppelpagina: door de lijst met gevonden OpenAmbers lopen
-      - if:
-          condition:
-            lambda: 'return id(knob_context) == 3;'
-          then:
-            - lambda: |-
-                lv_obj_t *r = id(pair_roller)->obj;
-                int n = (int) lv_roller_get_option_cnt(r);
-                int sel = (int) lv_roller_get_selected(r) + delta;
-                if (sel < 0) sel = 0;
-                if (sel > n - 1) sel = n - 1;
-                lv_roller_set_selected(r, sel, LV_ANIM_ON);
 
 # ---------------------------------------------------------------------
 # 7. ESP-NOW (packet_transport)
@@ -1058,279 +842,14 @@ interval:
             - script.execute: pair_refresh
 
 # ---------------------------------------------------------------------
-# 8. LETTERTYPEN, KLEUREN EN LVGL-PAGINA'S
-# Het blok tussen ">>> LVGL Designer" en "<<< end LVGL Designer" wordt door de
-# Designer gegenereerd; wijzig daar niets handmatig, behalve waar het hieronder staat.
-#   canvas_2 = Home (standaard)   canvas_5 = Overview   canvas_11 = Koppelen
+# 8. SCHERM (LVGL)
+# De pagina's, lettertypen en kleuren komen uit de LVGL Designer en staan in
+# thermostat/ui_designer.yaml; de scripts die het scherm bedienen in
+# thermostat/ui_scripts.yaml. Beide worden hier samengevoegd.
 # ---------------------------------------------------------------------
+packages:
+  ui_designer: !include thermostat/ui_designer.yaml
+  ui_scripts: !include thermostat/ui_scripts.yaml
 
-font:
-  # >>> LVGL Designer — managed font items >>>
-  - file: "gfonts://Quicksand"
-    id: quicksand_32
-    size: 32
-    bpp: 4
-    glyphsets: [GF_Latin_Core]
-  - file:
-      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
-      type: web
-    id: mdi_icons_40
-    size: 40
-    glyphs: [
-      "\U000F0028",  # Alert Circle
-      "\U000F0F54",  # Home Thermostat
-      "\U000F0393",  # Thermostat
-      "\U000F1B29",  # Faucet
-      "\U000F0238",  # Fire
-      "\U000F0ED5",  # Bacteria
-      "\U000F0717",  # Snowflake
-    ]
-  - file:
-      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
-      type: web
-    id: mdi_icons_63
-    size: 63
-    glyphs: [
-      "\U000F0F54",  # Home Thermostat
-    ]
-  # <<< end managed font <<<
-color:
-  - id: color_black
-    hex: "0A0A0A"
-  - id: color_white
-    hex: "FFFFFF"
-  - id: color_gray
-    hex: "AAAAAA"
-  - id: color_orange
-    hex: "FFB000"
-  - id: color_red
-    hex: "FF4500"
-  - id: color_blue
-    hex: "00A8FF"
-  - id: color_green
-    hex: "2ECC71"
-  - id: color_dark_red
-    hex: "330000"
-
-# >>> LVGL Designer - generated from the canvas. >>>
-# This block is regenerated from the canvas - edits here are not preserved.
 lvgl:
-  buffer_size: 25%  # handmatig; de Designer neemt dit niet over, zet het na het regenereren terug
-  top_layer:
-    bg_color: color_black
-    scrollbar_mode: "OFF"
-  pages:
-    - id: canvas_2
-      bg_color: 0x111827
-      pad_all: 0
-      scrollbar_mode: "OFF"
-      widgets:
-        - arc:
-            id: thermostat_arc_setpoint
-            x: 0
-            y: 0
-            width: 480
-            height: 480
-            align: CENTER
-            value: 50
-            min_value: 0
-            max_value: 100
-            adjustable: true
-            start_angle: 135
-            end_angle: 45
-            arc_color: 0x2B2B2B
-            arc_width: 16
-            arc_opa: 100%
-            indicator:
-              arc_color: 0xFDC83E
-              arc_width: 16
-              arc_opa: 87%
-              arc_rounded: true
-            knob:
-              bg_color: 0xFE8929
-              pad_all: 5
-            radius: 11
-            pad_all: 13
-            blur_radius: 8
-            blur_backdrop: true
-
-        - label:
-            id: thermostat_label_setpoint
-            x: 270
-            y: 176
-            width: 95
-            height: 55
-            text: "99,9"
-            text_color: 0xFFFFFF
-
-        - label:
-            id: label_icon_home
-            x: 208
-            y: 395
-            width: 65
-            height: 60
-            text: "\U000F0F54"
-            text_font: mdi_icons_63
-            text_align: CENTER
-            text_color: 0xFFFFFF
-
-    - id: canvas_5
-      bg_color: 0x283351
-      pad_all: 0
-      scrollbar_mode: "OFF"
-      widgets:
-        - obj:
-            id: overview_canvas
-            x: 0
-            y: 0
-            width: 425
-            height: 425
-            align: CENTER
-            hidden: false
-            bg_color: 0xFEF7FF
-            border_width: 0
-            border_opa: 0%
-            radius: 999
-            outline_width: 11
-            outline_color: 0xFEF7FF
-            outline_pad: 3
-            pad_all: 3
-            scrollbar_mode: "OFF"
-            widgets:
-              - label:
-                  id: overview_icon_errorwarning
-                  x: 190
-                  y: 224
-                  width: 40
-                  height: 40
-                  text: "\U000F0028"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
-              - label:
-                  id: overview_icon_roomtemp
-                  x: 139
-                  y: 83
-                  width: 40
-                  height: 40
-                  text: "\U000F0F54"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x080808
-              - label:
-                  id: overview_label_roomtemp
-                  x: 186
-                  y: 83
-                  width: 115
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x080808
-                  text_align: LEFT
-                  text_font: quicksand_32
-              - label:
-                  id: overview_icon_setpoint
-                  x: 139
-                  y: 130
-                  width: 40
-                  height: 40
-                  text: "\U000F0393"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
-              - label:
-                  id: overview_icon_tw
-                  x: 139
-                  y: 177
-                  width: 40
-                  height: 40
-                  text: "\U000F1B29"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x242424
-              - label:
-                  id: overview_label_tw
-                  x: 186
-                  y: 177
-                  width: 110
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x000000
-                  text_align: LEFT
-                  text_font: quicksand_32
-              - label:
-                  id: overview_label_setpoint
-                  x: 186
-                  y: 130
-                  width: 120
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x000000
-                  text_align: LEFT
-                  text_font: quicksand_32
-              - label:
-                  id: overview_icon_heatcool
-                  x: 146
-                  y: 224
-                  width: 40
-                  height: 40
-                  text: "\U000F0238"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0xFF0000
-              - label:
-                  id: overview_icon_leg
-                  x: 240
-                  y: 224
-                  text: "\U000F0ED5"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
-
-    - id: canvas_11
-      bg_color: 0x111827
-      pad_all: 0
-      scrollbar_mode: "OFF"
-      widgets:
-        - label:
-            id: pair_label_title
-            x: 205
-            y: 70
-            text: "Koppelen"
-            text_color: 0xFFFFFF
-
-        - label:
-            id: pair_label_status
-            x: 148
-            y: 115
-            text: "Zoeken naar OpenAmber"
-            text_color: 0xFFFFFF
-
-        - roller:
-            id: pair_roller
-            x: 158
-            y: 160
-            width: 165
-            height: 51
-            options:
-              - "Option 1"
-              - "Option 2"
-            visible_row_count: 3
-            text_font: montserrat_16
-
-        - label:
-            id: pair_label_hint
-            x: 91
-            y: 295
-            text: "Draai om te kiezen, druk om te koppelen"
-            text_color: 0xFFFFFF
-
-        - spinner:
-            id: pair_spinner
-            x: 216
-            y: 345
-            width: 60
-            height: 60
-            spin_time: 1000ms
-            arc_length: 60deg
-# <<< end LVGL Designer block <<<
-
+  buffer_size: 25%   # handmatig; staat hier zodat een nieuwe Designer-export het niet overschrijft
