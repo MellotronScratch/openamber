@@ -6,8 +6,12 @@
 # en neem het op via een eigen apparaatbestand
 # (zie openamber-waveshare-display-espnow.yaml).
 #
+# Er is geen MAC-adres nodig. De koppeling werkt met broadcast en een gedeelde
+# sleutel: pakketten worden versleuteld, en alleen een apparaat met dezelfde
+# sleutel wordt begrepen. De thermostaat en OpenAmber vinden elkaar dus vanzelf.
+#
 # Het apparaatbestand moet deze substitution zetten:
-#   thermostat_peer_mac: "AA:BB:CC:DD:EE:FF"   # MAC van de ronde thermostaat
+#   thermostat_link_key: !secret espnow_key    # dezelfde tekst in secrets.yaml van de thermostaat
 # En mag deze overschrijven (standaard hieronder):
 #   thermostat_name: "openamber-thermostaat"   # "esphome: name:" van de thermostaat
 #
@@ -28,6 +32,9 @@ substitutions:
 # 1. ALGEMEEN
 # ---------------------------------------------------------------------
 globals:
+  - id: thermostat_pin_ok         # true als de koppelcode van de thermostaat gelijk is aan de eigen koppelcode
+    type: bool
+    initial_value: 'false'
   - id: last_cmd_seq              # volgnummer van het laatst uitgevoerde commando
     type: int
     restore_value: yes            # blijft bewaard na een herstart, zodat niets opnieuw wordt uitgevoerd
@@ -35,20 +42,19 @@ globals:
 
 espnow:
   id: espnow_component
-  peers:
-    - ${thermostat_peer_mac}      # peers moeten hier geregistreerd zijn om pakketten te ontvangen
+  auto_add_peer: true             # onbekende afzenders worden vanzelf toegevoegd; zonder de sleutel wordt er niets mee gedaan
 
 packet_transport:
   - platform: espnow
     id: transport_thermostaat
     espnow_id: espnow_component
-    peer_address: ${thermostat_peer_mac}
-    # Zet versleuteling pas aan als de verbinding werkt, op beide kanten tegelijk
-    # (zelfde tekst als "espnow_key" in secrets.yaml van de thermostaat):
-    # encryption: !secret espnow_key
-    # rolling_code_enable: true
+    # Geen peer_address: de pakketten gaan als broadcast. Versleuteling en rolling code
+    # zorgen dat alleen een apparaat met dezelfde sleutel iets met de pakketten kan.
+    encryption: ${thermostat_link_key}
+    rolling_code_enable: false    # voorlopig uit; eerst moet de verbinding werken
     providers:
       - name: ${thermostat_name}
+        encryption: ${thermostat_link_key}   # nodig om pakketten van de thermostaat te kunnen lezen
 
     # -------------------------------------------------------------
     # 2. WAT OPENAMBER VERSTUURT
@@ -56,6 +62,9 @@ packet_transport:
     # broadcast_id is de naam waaronder de thermostaat de waarde ontvangt.
     # -------------------------------------------------------------
     sensors:
+      # Koppelcode: altijd als eerste, zodat de thermostaat hem eerst kent
+      - id: pt_pin
+        broadcast_id: pin
       # Temperaturen: de bestaande modbus-sensors, rechtstreeks gedeeld
       - id: dhw_temperature_tw_sensor       # Tapwatertemperatuur (Tw)
         broadcast_id: tw
@@ -82,6 +91,8 @@ packet_transport:
       # Bestaande binary sensors, rechtstreeks gedeeld
       - id: error_active                    # "Error actief"
         broadcast_id: err
+      - id: warning_active                  # "Waarschuwing actief"
+        broadcast_id: warn
       - id: heat_demand_active_sensor       # "Warmtevraag"
         broadcast_id: wv
       - id: cool_demand_active_sensor       # "Koudevraag"
@@ -111,7 +122,36 @@ binary_sensor:
     source_id: legio_enabled_switch         # de switch "Legionellapreventie"
     internal: true
 
+script:
+  - id: thermostat_pin_check      # vergelijkt de koppelcode van de thermostaat met de eigen code
+    then:
+      - lambda: |-
+          // Eigen code = laatste 6 hex-tekens van het MAC-adres van OpenAmber (als getal)
+          long mine = strtol(get_mac_address().substr(6).c_str(), nullptr, 16);
+          id(thermostat_pin_ok) = mine > 0 && id(rx_pin).has_state() &&
+                                  lroundf(id(rx_pin).state) == mine;
+
 sensor:
+  # Eigen koppelcode, wordt als eerste waarde in elk pakket verstuurd.
+  # Dit zijn de laatste 6 hex-tekens van het MAC-adres van OpenAmber (zie ook de WiFi-pagina),
+  # bijvoorbeeld MAC AA:BB:CC:11:22:33 geeft code 112233. Elk apparaat heeft zo een eigen code.
+  # Dit getal past precies in een float (24 bits), dus er gaat niets verloren bij het versturen.
+  - platform: template
+    id: pt_pin
+    internal: true
+    update_interval: 5s
+    lambda: 'return (float) strtol(get_mac_address().substr(6).c_str(), nullptr, 16);'
+
+  # Koppelcode van de thermostaat (de code die daar is ingetypt): moet gelijk zijn aan de eigen code
+  - platform: packet_transport
+    provider: ${thermostat_name}
+    remote_id: pin
+    id: rx_pin
+    internal: true
+    on_value:
+      then:
+        - script.execute: thermostat_pin_check
+
   # Setpoints en modus van de "Amber thermostat", elke 5 s uit de climate gelezen
   - platform: template
     id: pt_target_low
@@ -141,6 +181,8 @@ sensor:
   # BME680-waarden van de thermostaat, zichtbaar in de web-interface
   - platform: packet_transport
     provider: ${thermostat_name}
+    filters:                                # alleen bij gelijke koppelcode
+      - lambda: 'if (id(thermostat_pin_ok)) return x; return NAN;'
     remote_id: bt                           # temperatuur
     id: thermostat_temp
     name: "Thermostaat temperatuur (BME680)"
@@ -154,6 +196,8 @@ sensor:
 
   - platform: packet_transport
     provider: ${thermostat_name}
+    filters:                                # alleen bij gelijke koppelcode
+      - lambda: 'if (id(thermostat_pin_ok)) return x; return NAN;'
     remote_id: bh                           # luchtvochtigheid
     id: thermostat_hum
     name: "Thermostaat luchtvochtigheid (BME680)"
@@ -167,6 +211,8 @@ sensor:
 
   - platform: packet_transport
     provider: ${thermostat_name}
+    filters:                                # alleen bij gelijke koppelcode
+      - lambda: 'if (id(thermostat_pin_ok)) return x; return NAN;'
     remote_id: dp                           # dauwpunt (op de thermostaat berekend)
     id: thermostat_dewpoint
     name: "Thermostaat dauwpunt (BME680)"
@@ -192,6 +238,8 @@ sensor:
       then:
         - lambda: |-
             if (std::isnan(x)) return;
+            // Alleen commando's van de gekoppelde thermostaat uitvoeren
+            if (!id(thermostat_pin_ok)) return;
             // Pak het getal uit: hoog*2, laag*2, modus (0-3) en volgnummer
             long n = lroundf(x);
             int hi2 = n % 100;  n /= 100;

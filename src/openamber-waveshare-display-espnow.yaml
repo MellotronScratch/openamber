@@ -6,9 +6,19 @@
 # compileer en flash dit bestand in plaats van het originele.
 # De originele bestanden blijven ongewijzigd.
 # =====================================================================
+# Zet in secrets.yaml (van dit project en van de thermostaat) dezelfde regel:
+#   espnow_key: "een-eigen-lange-willekeurige-tekst"
+# Bijvoorbeeld te maken met:  openssl rand -hex 16
+
+external_components:
+  - source:
+      type: local
+      path: openamber
+    components: [mock_time, mock_update]
+
 substitutions:
-  thermostat_peer_mac: "68:B6:B3:25:10:B0"   # MAC van de ronde thermostaat (controleer in zijn log)
-  thermostat_name: openamber-thermostaat     # "esphome: name:" van de thermostaat
+  thermostat_link_key: !secret espnow_key    # gedeelde sleutel; moet gelijk zijn aan die van de thermostaat
+  thermostat_name: openamber-thermostaat    # "esphome: name:" van de thermostaat
 
 packages:
   openamber_display: !include openamber-waveshare-display.yaml
