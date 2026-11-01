@@ -9,41 +9,52 @@ script:
     then:
       - lambda: |-
           auto on = [](binary_sensor::BinarySensor *b) { return b->has_state() && b->state; };
-          // Verwarmen / koelen / standby (zelfde plek, ander symbool en kleur)
-          if (on(id(remote_cd))) {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0717");               // sneeuwvlok
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0x00A8FF), 0);
-          } else if (on(id(remote_wv))) {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0238");               // vlam
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0xFF6A00), 0);
+          bool link = id(link_ok);
+          bool bezig = on(id(remote_da)) || on(id(remote_twp)) || on(id(remote_twv));
+
+          // Geen verbinding met OpenAmber: alleen het "link uit"-icoon, de rest zou verouderd zijn
+          if (link) lv_obj_add_flag(id(overview_icon_link), LV_OBJ_FLAG_HIDDEN);
+          else      lv_obj_clear_flag(id(overview_icon_link), LV_OBJ_FLAG_HIDDEN);
+
+          // Eén icoon voor de actieve modus; bij meerdere tegelijk geldt deze voorrang:
+          // ontdooien, legionellarun, tapwater, koelen, verwarmen, standby
+          if (!link) {
+            lv_obj_add_flag(id(overview_icon_mode_heatcooltapleg), LV_OBJ_FLAG_HIDDEN);
           } else {
-            lv_label_set_text(id(overview_icon_heatcool), "\U000F0238");               // vlam, grijs
-            lv_obj_set_style_text_color(id(overview_icon_heatcool), lv_color_hex(0x808080), 0);
+            const char *symbool;
+            uint32_t kleur;
+            if (on(id(remote_dfr)))                          { symbool = "\U000F12CB"; kleur = 0x00BCD4; }  // ontdooien
+            else if (on(id(remote_twa)) && on(id(remote_lega))) { symbool = "\U000F0ED5"; kleur = 0x2ECC71; }  // legionella: bacterie
+            else if (bezig)                                  { symbool = "\U000F1B29"; kleur = 0x00A8FF; }  // tapwater maken: kraantje
+            else if (on(id(remote_cd)))                      { symbool = "\U000F0717"; kleur = 0x00A8FF; }  // koelen: sneeuwvlok
+            else if (on(id(remote_wv)))                      { symbool = "\U000F0238"; kleur = 0xFF3B00; }  // verwarmen: vlam
+            else                                             { symbool = "\U000F0906"; kleur = 0x808080; }  // standby
+            lv_label_set_text(id(overview_icon_mode_heatcooltapleg), symbool);
+            lv_obj_set_style_text_color(id(overview_icon_mode_heatcooltapleg), lv_color_hex(kleur), 0);
+            lv_obj_clear_flag(id(overview_icon_mode_heatcooltapleg), LV_OBJ_FLAG_HIDDEN);
           }
+
+          // Backupelement aan: klein bliksemicoontje naast het modusicoon
+          if (link && on(id(remote_bu))) lv_obj_clear_flag(id(overview_icon_backupheater), LV_OBJ_FLAG_HIDDEN);
+          else                           lv_obj_add_flag(id(overview_icon_backupheater), LV_OBJ_FLAG_HIDDEN);
+
           // Fout (rood) gaat voor waarschuwing (oranje); niets aan de hand = verborgen
-          if (on(id(remote_err))) {
+          if (link && on(id(remote_err))) {
             lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFF0000), 0);
             lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          } else if (on(id(remote_warn))) {
+          } else if (link && on(id(remote_warn))) {
             lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFFA500), 0);
             lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
           } else {
             lv_obj_add_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
           }
-          // Tapwater: alleen zichtbaar als aanwezig; blauw als tapwater bezig is, anders grijs
+
+          // Kraantje naast de tapwatertemperatuur: alleen als tapwater aanwezig is; blauw als bezig, anders grijs
           if (on(id(remote_twa))) {
-            bool bezig = on(id(remote_da)) || on(id(remote_twp)) || on(id(remote_twv));
             lv_obj_set_style_text_color(id(overview_icon_tw), lv_color_hex(bezig ? 0x00A8FF : 0x808080), 0);
             lv_obj_clear_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
           } else {
             lv_obj_add_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
-          }
-          // Legionellarun: bacterie alleen tijdens de run
-          if (on(id(remote_twa)) && on(id(remote_lega))) {
-            lv_obj_set_style_text_color(id(overview_icon_leg), lv_color_hex(0x2ECC71), 0);
-            lv_obj_clear_flag(id(overview_icon_leg), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_leg), LV_OBJ_FLAG_HIDDEN);
           }
 
   - id: show_pair

@@ -3,9 +3,10 @@
 # Dit bestand mag je in zijn geheel vervangen door een nieuwe export uit de Designer.
 #   canvas_2 = Home (standaard)   canvas_5 = Overview   canvas_11 = Koppelen
 # Handmatig in openamber-thermostat.yaml (dus niet hier): lvgl.buffer_size.
-# Let op in de Designer: verwijder ongebruikte lettertypen, haal "hidden" van
-# overview_canvas uit, en zet ergens een klein verborgen label met de sneeuwvlok
-# (mdi_icons_40) zodat dat symbool in de lettertypelijst blijft.
+# Let op in de Designer: verwijder ongebruikte lettertypen (Roboto, Material+Icons) en zet
+# ergens een klein verborgen label met de symbolen die alleen het script gebruikt
+# (sneeuwvlok, bacterie, standby, ontdooien; lettertype mdi_icons_40), anders verdwijnen ze
+# uit de lettertypelijst bij een nieuwe export.
 # =====================================================================
 
 font:
@@ -18,6 +19,14 @@ font:
   - file:
       url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
       type: web
+    id: mdi_icons_15
+    size: 15
+    glyphs: [
+      "\U000F140B",  # Lightning Bolt
+    ]
+  - file:
+      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+      type: web
     id: mdi_icons_40
     size: 40
     glyphs: [
@@ -26,8 +35,11 @@ font:
       "\U000F0393",  # Thermostat
       "\U000F1B29",  # Faucet
       "\U000F0238",  # Fire
-      "\U000F0ED5",  # Bacteria
+      "\U000F0338",  # Link Off
       "\U000F0717",  # Snowflake
+      "\U000F0906",  # Power Standby
+      "\U000F0ED5",  # Bacteria
+      "\U000F12CB",  # Snowflake Melt
     ]
   - file:
       url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
@@ -129,7 +141,6 @@ lvgl:
             width: 425
             height: 425
             align: CENTER
-            hidden: false
             bg_color: 0xFEF7FF
             border_width: 0
             border_opa: 0%
@@ -211,7 +222,7 @@ lvgl:
                   text_align: LEFT
                   text_font: quicksand_32
               - label:
-                  id: overview_icon_heatcool
+                  id: overview_icon_mode_heatcooltapleg
                   x: 146
                   y: 224
                   width: 40
@@ -221,10 +232,56 @@ lvgl:
                   text_align: CENTER
                   text_color: 0xFF0000
               - label:
-                  id: overview_icon_leg
+                  id: overview_icon_link
                   x: 240
                   y: 224
+                  width: 40
+                  height: 40
+                  text: "\U000F0338"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_backupheater
+                  x: 171
+                  y: 224
+                  text: "\U000F140B"
+                  text_font: mdi_icons_15
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_cool
+                  x: 146
+                  y: 224
+                  hidden: true
+                  text: "\U000F0717"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_standby
+                  x: 146
+                  y: 224
+                  hidden: true
+                  text: "\U000F0906"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_leg
+                  x: 146
+                  y: 224
+                  hidden: true
                   text: "\U000F0ED5"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0x000000
+              - label:
+                  id: overview_icon_defrost
+                  x: 146
+                  y: 224
+                  hidden: true
+                  text: "\U000F12CB"
                   text_font: mdi_icons_40
                   text_align: CENTER
                   text_color: 0x000000
@@ -276,4 +333,3 @@ lvgl:
             spin_time: 1000ms
             arc_length: 60deg
 # <<< end LVGL Designer block <<<
-

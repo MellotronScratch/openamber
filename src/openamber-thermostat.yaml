@@ -7,12 +7,12 @@
 # zonder MAC-adres: broadcast met een gedeelde sleutel (espnow_key in secrets.yaml).
 #
 # Wat er over de lucht gaat (sensors en binary sensors, zie ESPHome packet_transport):
-#   OpenAmber -> hier : tw tc tuo tui ta rt (temperaturen)
+#   OpenAmber -> hier : tw tws tc tuo tui ta rt (temperaturen), cf (compressorfrequentie Hz), ec (foutcode)
 #                       slo shi mode (werkelijke setpoints en modus, 0=uit 1=verwarmen 2=koelen)
-#                       twa err warn legp wv cd twp twv da lega (status, binary sensors)
+#                       twa err warn legp wv cd twp twv da lega dfr bu (status, binary sensors)
 #   hier -> OpenAmber : bt bh dp (BME680)
 #                       cmd (commando: volgnummer + modus + setpoints in een getal)
-# De statussen (twa err warn legp wv cd twp twv da lega) gaan als binary sensor over;
+# De statussen (twa err warn legp wv cd twp twv da lega dfr bu) gaan als binary sensor over;
 # alleen de setpoints en de modus zijn sensors (een climate kan niet rechtstreeks gedeeld worden).
 #
 # Opbouw van dit bestand:
@@ -28,7 +28,22 @@
 # Zet in secrets.yaml (van dit project en van OpenAmber) dezelfde regel:
 #   espnow_key: "een-eigen-lange-willekeurige-tekst"
 
+substitutions:
+  led_bodem: "8.5"                # positie onderaan de ring: tussen led 8 en led 9 (led 2 zit bovenaan); zie ledtest
+  vat_leeg: "20"                  # tapwatertemperatuur waarbij het vat als leeg getoond wordt (graden)
+  condens_marge: "2"              # waarschuwen als de aanvoer minder dan zoveel graden boven het dauwpunt komt (bij koelen)
+  vat_doel_standaard: "55"        # gebruikt als OpenAmber geen tapwater-setpoint doorgeeft (graden)
+
 globals:
+  - id: last_rx                   # tijdstip (ms) van het laatste pakket van de gekoppelde OpenAmber; 0 = nog niets ontvangen
+    type: uint32_t
+    initial_value: '0'
+  - id: link_ok                   # true zolang er pakketten van de gekoppelde OpenAmber binnenkomen
+    type: bool
+    initial_value: 'false'
+  - id: condens_warn              # true als koelen op het punt staat condens te geven
+    type: bool
+    initial_value: 'false'
   - id: pin_ok                    # true als de koppelcode van OpenAmber gelijk is aan de eigen koppelcode
     type: bool
     initial_value: 'false'
@@ -68,12 +83,6 @@ esphome:
         - lvgl.page.show: canvas_2           # Home is de startpagina
         # Statusicoontjes op Overview: kleur, symbool en zichtbaarheid volgen de status van OpenAmber
         - script.execute: update_status_icons
-        # TIJDELIJKE LED-TEST (daarna weghalen): na 1 s de ledring met een eigen kleur per led
-        - delay: 1s
-        - light.turn_on:
-            id: status_leds
-            brightness: 60%
-            effect: "LED test"
         # Nog niet gekoppeld? Open dan na een paar seconden vanzelf de koppelpagina
         - delay: 3s
         - if:
@@ -106,14 +115,9 @@ api:
   encryption:
     key: "aYEOmndEDcqJUtjLSYFjcyZKx8FL1n3p5KV78sW+m3M="
 
-#web_server:                       # firmware bijwerken via de browser: http://<ip-van-de-thermostaat>
-#  port: 80
-#  version: 3                      # geen wachtwoord: iedereen op je netwerk kan de pagina openen
-
 ota:
   - platform: esphome
     encryption:
-  - platform: web_server          # upload firmware.ota.bin via de webpagina van de thermostaat
 
 wifi:
   ssid: !secret wifi_ssid
@@ -190,7 +194,34 @@ light:
     name: "Status LEDs"
     default_transition_length: 300ms
     effects:
-      - addressable_lambda:       # TIJDELIJKE TEST: elke led een eigen kleur, om de volgorde van de ring te bepalen
+      - addressable_lambda:       # vat dat volloopt: onderaan beginnen, aan beide kanten omhoog, bovenaan eindigen
+          name: "Vat"
+          update_interval: 100ms
+          lambda: |-
+            const int N = 13;
+            const float bodem = ${led_bodem};
+            float tw = id(dhw_temperature_tw_sensor).state;
+            float doel = id(rx_tws).has_state() ? id(rx_tws).state : NAN;
+            if (std::isnan(doel) || doel < 30) doel = ${vat_doel_standaard};
+            float frac = std::isnan(tw) ? 0.0f : (tw - ${vat_leeg}) / (doel - ${vat_leeg});
+            frac = std::max(0.0f, std::min(1.0f, frac));
+            float niveau = frac * 7.0f;                     // 7 rijen: 6 paren van onder naar boven + de bovenste led
+            bool bezig = id(remote_da).has_state() && id(remote_da).state;
+            float puls = 0.5f + 0.5f * sinf(millis() / 300.0f);
+            for (int i = 0; i < N; i++) {
+              float d = fabsf(i - bodem);                    // afstand tot de bodem, rond de ring gemeten
+              d = std::min(d, N - d);
+              int rij = (int) roundf(d - 0.5f);              // 0 = onderste paar (led 8+9), 6 = bovenste led (led 2)
+              float v = std::max(0.0f, std::min(1.0f, niveau - rij));
+              // vooraan het vulproces pulseert de led tijdens het opwarmen
+              if (bezig && rij == (int) floorf(niveau) && v < 1.0f) v = std::max(v, 0.15f) * (0.4f + 0.6f * puls);
+              float t = rij / 6.0f;                         // kleur: blauw -> oranje -> rood
+              float r, g, b;
+              if (t < 0.5f) { float u = t * 2.0f; r = 255.0f * u; g = 80.0f + 40.0f * u; b = 255.0f * (1.0f - u); }
+              else          { float u = (t - 0.5f) * 2.0f; r = 255.0f; g = 120.0f * (1.0f - u); b = 0.0f; }
+              it[i] = Color((uint8_t) (r * v), (uint8_t) (g * v), (uint8_t) (b * v));
+            }
+      - addressable_lambda:       # ledtest (niet meer automatisch): elke led een eigen kleur: elke led een eigen kleur, om de volgorde van de ring te bepalen
           name: "LED test"
           update_interval: 1s
           lambda: |-
@@ -360,6 +391,32 @@ binary_sensor:
       then:
         - script.execute: update_status_icons
 
+  - platform: packet_transport
+    provider: openamber
+    id: remote_dfr
+    remote_id: dfr                # bron: binary sensor "Defrost" (defrost_active_sensor)
+    filters:                    # alleen waarden van de gekoppelde OpenAmber (zelfde koppelcode)
+      - lambda: 'if (id(pin_ok)) return x; return {};'
+    name: "Ontdooien"
+    device_class: running
+    internal: false
+    on_state:
+      then:
+        - script.execute: update_status_icons
+
+  - platform: packet_transport
+    provider: openamber
+    id: remote_bu
+    remote_id: bu                 # bron: binary sensor "Verwarmingselement" (backup_heater_active_sensor)
+    filters:                    # alleen waarden van de gekoppelde OpenAmber (zelfde koppelcode)
+      - lambda: 'if (id(pin_ok)) return x; return {};'
+    name: "Verwarmingselement"
+    device_class: running
+    internal: false
+    on_state:
+      then:
+        - script.execute: update_status_icons
+
 # ---------------------------------------------------------------------
 # 4. SENSOREN
 # ---------------------------------------------------------------------
@@ -387,6 +444,8 @@ sensor:
               id(found_seen).push_back(now);
             }
         - script.execute: pin_check
+        - lambda: |-
+            if (id(pin_ok)) id(last_rx) = millis();
 
   # Eigen koppelcode (de gekozen OpenAmber), wordt als eerste waarde in elk pakket verstuurd
   - platform: template
@@ -488,6 +547,30 @@ sensor:
   # --- Temperaturen van OpenAmber (provider: openamber) ---
   # remote_id is de naam waaronder OpenAmber de waarde verstuurt (broadcast_id in packet_transport.yaml).
   # Op OpenAmber zijn dit de modbus-sensors met dezelfde naam als hier (bron-id staat bij elke sensor).
+  - platform: packet_transport
+    provider: openamber
+    id: rx_cf
+    remote_id: cf               # bron op OpenAmber: current_compressor_frequency (Hz)
+    filters:                    # alleen waarden van de gekoppelde OpenAmber (zelfde koppelcode)
+      - lambda: 'if (id(pin_ok)) return x; return NAN;'
+    internal: true
+
+  - platform: packet_transport
+    provider: openamber
+    id: rx_ec
+    remote_id: ec               # bron op OpenAmber: pt_errcode (1xx=P, 2xx=F, 3xx=E, 4xx=overig, 0=geen)
+    filters:                    # alleen waarden van de gekoppelde OpenAmber (zelfde koppelcode)
+      - lambda: 'if (id(pin_ok)) return x; return NAN;'
+    internal: true
+
+  - platform: packet_transport
+    provider: openamber
+    id: rx_tws
+    remote_id: tws              # bron op OpenAmber: current_dhw_setpoint_sensor (doeltemperatuur tapwater)
+    filters:                    # alleen waarden van de gekoppelde OpenAmber (zelfde koppelcode)
+      - lambda: 'if (id(pin_ok)) return x; return NAN;'
+    internal: true
+
   - platform: packet_transport
     provider: openamber
     id: dhw_temperature_tw_sensor
@@ -768,10 +851,8 @@ script:
           brightness: 100%
       - light.turn_on:
           id: status_leds
-          brightness: 100%
-          red: 100%
-          green: 50%
-          blue: 10%               # warm oranje
+          brightness: 60%
+          effect: "Vat"           # ledring toont hoe vol het tapwatervat is
       - delay: 60s
       - light.turn_off:
           id: backlight
@@ -833,6 +914,19 @@ packet_transport:
 
 # Elke 2 s de lijst op de koppelpagina bijwerken, maar alleen zolang die pagina open is
 interval:
+  - interval: 5s                  # verbinding en condenswaarschuwing bijwerken
+    then:
+      - lambda: |-
+          // Verbinding: er moet de laatste minuut een pakket van de gekoppelde OpenAmber zijn gekomen
+          id(link_ok) = id(last_rx) != 0 && (millis() - id(last_rx)) < 60000;
+          // Condens: bij koelen komt de aanvoer dicht bij of onder het dauwpunt van de kamer
+          float tuo = id(outlet_temperature_tuo).state;
+          float dp = id(bme_dewpoint).state;
+          bool koelen = id(rx_mode).has_state() && lroundf(id(rx_mode).state) == 2;
+          id(condens_warn) = id(link_ok) && koelen && !std::isnan(tuo) && !std::isnan(dp) &&
+                             tuo < dp + ${condens_marge};
+      - script.execute: update_status_icons
+
   - interval: 2s
     then:
       - if:
@@ -848,8 +942,8 @@ interval:
 # thermostat/ui_scripts.yaml. Beide worden hier samengevoegd.
 # ---------------------------------------------------------------------
 packages:
-  ui_designer: !include thermostat/ui_designer.yaml
-  ui_scripts: !include thermostat/ui_scripts.yaml
+  ui_designer: !include openamber/thermostat/ui_designer.yaml
+  ui_scripts: !include openamber/thermostat/ui_scripts.yaml
 
 lvgl:
   buffer_size: 25%   # handmatig; staat hier zodat een nieuwe Designer-export het niet overschrijft

@@ -68,6 +68,8 @@ packet_transport:
       # Temperaturen: de bestaande modbus-sensors, rechtstreeks gedeeld
       - id: dhw_temperature_tw_sensor       # Tapwatertemperatuur (Tw)
         broadcast_id: tw
+      - id: current_dhw_setpoint_sensor     # doeltemperatuur tapwater (voor de ledring)
+        broadcast_id: tws
       - id: heat_cool_temperature_tc        # CV-aanvoertemperatuur (Tc)
         broadcast_id: tc
       - id: outlet_temperature_tuo          # CV-aanvoertemperatuur (Tuo)
@@ -86,6 +88,10 @@ packet_transport:
         broadcast_id: shi
       - id: pt_mode                         # modus: 0=uit 1=verwarmen 2=koelen
         broadcast_id: mode
+      - id: current_compressor_frequency    # compressorfrequentie (Hz)
+        broadcast_id: cf
+      - id: pt_errcode                      # eerste actieve fout of waarschuwing als getal
+        broadcast_id: ec
 
     binary_sensors:
       # Bestaande binary sensors, rechtstreeks gedeeld
@@ -105,6 +111,10 @@ packet_transport:
         broadcast_id: da
       - id: dhw_legionella_run_active_sensor  # "Legionellacyclus actief"
         broadcast_id: lega
+      - id: defrost_active_sensor           # "Defrost" (ontdooicyclus actief)
+        broadcast_id: dfr
+      - id: backup_heater_active_sensor     # "Verwarmingselement" (backupelement aan)
+        broadcast_id: bu
       # Binary sensors die een switch volgen (hieronder in binary_sensor:)
       - id: pt_twa                          # volgt de switch "Tapwater aanwezig"
         broadcast_id: twa
@@ -173,6 +183,62 @@ sensor:
       auto m = id(climate_controller).mode;
       if (m == climate::CLIMATE_MODE_HEAT) return 1.0f;
       if (m == climate::CLIMATE_MODE_COOL) return 2.0f;
+      return 0.0f;
+
+  # Eerste actieve fout (daarna waarschuwing) als getal voor de thermostaat:
+  # 1xx = P-code, 2xx = F-code, 3xx = E-code (P05 = 105, F14 = 214, E03 = 303),
+  # 401-406 = overige fouten, 407-409 = overige waarschuwingen; 0 = niets aan de hand.
+  - platform: template
+    id: pt_errcode
+    internal: true
+    update_interval: 5s
+    lambda: |-
+      if (id(error_flag_p03).state) return 103.0f;
+      if (id(error_flag_p05).state) return 105.0f;
+      if (id(error_flag_p08).state) return 108.0f;
+      if (id(error_flag_p09).state) return 109.0f;
+      if (id(error_flag_p10).state) return 110.0f;
+      if (id(error_flag_f01).state) return 201.0f;
+      if (id(error_flag_f02).state) return 202.0f;
+      if (id(error_flag_f03).state) return 203.0f;
+      if (id(error_flag_f04).state) return 204.0f;
+      if (id(error_flag_f05).state) return 205.0f;
+      if (id(error_flag_f06).state) return 206.0f;
+      if (id(error_flag_f07).state) return 207.0f;
+      if (id(error_flag_f09).state) return 209.0f;
+      if (id(error_flag_e01).state) return 301.0f;
+      if (id(error_flag_e02).state) return 302.0f;
+      if (id(error_flag_e03).state) return 303.0f;
+      if (id(error_flag_e04).state) return 304.0f;
+      if (id(error_flag_e05).state) return 305.0f;
+      if (id(error_flag_e06).state) return 306.0f;
+      if (id(error_flag_e07).state) return 307.0f;
+      if (id(error_flag_e08).state) return 308.0f;
+      if (id(error_flag_f10).state) return 210.0f;
+      if (id(error_flag_f13).state) return 213.0f;
+      if (id(error_flag_f14).state) return 214.0f;
+      if (id(error_flag_f15).state) return 215.0f;
+      if (id(error_flag_f16).state) return 216.0f;
+      if (id(error_flag_f17).state) return 217.0f;
+      if (id(error_flag_f18).state) return 218.0f;
+      if (id(error_flag_f21).state) return 221.0f;
+      if (id(error_flag_f22).state) return 222.0f;
+      if (id(error_pump_start_timeout).state) return 401.0f;
+      if (id(error_compressor_start_timeout).state) return 402.0f;
+      if (id(error_pump_stop_timeout).state) return 403.0f;
+      if (id(error_modbus_connection_timeout).state) return 404.0f;
+      if (id(error_three_way_valve_state_timeout).state) return 405.0f;
+      if (id(error_inside_unit_failsafe).state) return 406.0f;
+      if (id(error_flag_p01).state) return 101.0f;
+      if (id(error_flag_p02).state) return 102.0f;
+      if (id(error_flag_p07).state) return 107.0f;
+      if (id(error_flag_p06).state) return 106.0f;
+      if (id(error_flag_p11).state) return 111.0f;
+      if (id(error_flag_p12).state) return 112.0f;
+      if (id(error_flag_p13).state) return 113.0f;
+      if (id(error_flag_inside_comm_failsafe).state) return 407.0f;
+      if (id(error_flag_inside_eeprom).state) return 408.0f;
+      if (id(error_flag_pump_p0_alarm).state) return 409.0f;
       return 0.0f;
 
   # -------------------------------------------------------------
