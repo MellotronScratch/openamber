@@ -10,6 +10,7 @@ De originele OpenAmber-bestanden zijn niet aangepast. Alles wat de koppeling nod
 ## Inhoud
 
 1. [Bestanden](#bestanden)
+   - [Een ander scherm of bord](#een-ander-scherm-of-bord)
 2. [Hoe de communicatie werkt](#hoe-de-communicatie-werkt)
 3. [Wat standaard is en wat zelf gebouwd is](#wat-standaard-is-en-wat-zelf-gebouwd-is)
 4. [Koppelen](#koppelen)
@@ -25,9 +26,10 @@ De originele OpenAmber-bestanden zijn niet aangepast. Alles wat de koppeling nod
 ## Bestanden
 
 ```
-openamber-thermostat.yaml              hoofdbestand van de thermostaat (hardware, sensoren, besturing, ESP-NOW)
-openamber/thermostat/ui_designer.yaml  lettertypen, kleuren en pagina's uit de LVGL Designer (wordt vervangen bij een export)
-openamber/thermostat/ui_scripts.yaml   scripts die iets met het scherm doen
+openamber-thermostat-ZX2D10GE01R-V4848.yaml  bordbestand: het bestand dat je compileert (pinnen, scherm, backlight, ledring, knop, BME680)
+openamber-thermostat.yaml                    generiek deel: sensoren, ESP-NOW, koppelen, scripts, besturing
+openamber/thermostat/ui_designer.yaml        lettertypen, kleuren en pagina's uit de LVGL Designer (wordt vervangen bij een export)
+openamber/thermostat/ui_scripts.yaml         scripts die iets met het scherm doen
 ```
 
 Aan de OpenAmber-kant:
@@ -37,8 +39,32 @@ openamber-waveshare-display-espnow.yaml   wrapper: laadt het originele display-b
 openamber/thermostat/thermostat_link.yaml de koppeling (de enige toevoeging voor OpenAmber)
 ```
 
-Het hoofdbestand voegt de twee bestanden uit `thermostat/` samen via `packages:`. Het pad daar moet
+Het bordbestand laadt het generieke deel via `packages:`, en het generieke deel laadt de twee bestanden uit `thermostat/`. Het pad daar moet
 kloppen met waar de bestanden in je project staan (`!include openamber/thermostat/ui_designer.yaml`).
+
+### Een ander scherm of bord
+
+Alles wat bij het scherm of bord hoort staat in het bordbestand; het generieke deel kent de hardware niet. Voor een ander
+scherm maak je een kopie van het bordbestand (bijvoorbeeld `openamber-thermostat-nieuwscherm.yaml`), pas je de hardware aan, en
+compileer je dat bestand. Het generieke deel verandert niet.
+
+Het bordbestand moet leveren:
+
+| Wat | Toelichting |
+|---|---|
+| `esp32:`, `psram:`, `spi:`, `i2c:`, `display:` | chip, geheugen en het schermmodel |
+| `lvgl: buffer_size` | past bij het scherm; de Designer-export neemt dit niet over |
+| `light` met id `backlight` | backlight; het generieke deel schakelt hem na 60 s uit |
+| `light` met id `status_leds` en een effect `Vat` | ledring; het aantal leds en `led_bodem` horen bij het bord |
+| `sensor` met ids `bme_temp`, `bme_hum`, `bme_pres`, `bme_gas` | BME680 of een vergelijkbare sensor |
+| draaiknop | bij draaien het script `knob_step` aanroepen met `delta: 1` of `-1` |
+| drukknop | korte druk roept `knob_press_short` aan, lange druk (langer dan 0,8 s) roept `knob_press_long` aan |
+
+Het LVGL-ontwerp (`ui_designer.yaml`) is gemaakt voor 480×480 pixels. Heeft het nieuwe scherm een ander formaat, dan moet
+dat ontwerp opnieuw gemaakt worden.
+
+De naam in `esphome: name:` (`openamber-thermostaat`) staat in het generieke deel en moet voor alle borden gelijk blijven,
+omdat OpenAmber de thermostaat daaraan herkent.
 
 Benodigd in `secrets.yaml` (op beide kanten dezelfde `espnow_key`):
 
@@ -233,11 +259,11 @@ Scripts die iets met widgets doen staan in `ui_scripts.yaml`: `update_status_ico
 
 ## Instellingen die je kunt aanpassen
 
-Bovenin `openamber-thermostat.yaml`, onder `substitutions:`:
+Bovenin `openamber-thermostat.yaml` (en `led_bodem` in het bordbestand), onder `substitutions:`:
 
 | Naam | Standaard | Betekenis |
 |---|---|---|
-| `led_bodem` | 8.5 | positie onderaan de ring (tussen led 8 en 9) |
+| `led_bodem` (bordbestand) | 8.5 | positie onderaan de ring (tussen led 8 en 9) |
 | `vat_leeg` | 20 | tapwatertemperatuur waarbij het vat als leeg getoond wordt |
 | `vat_doel_standaard` | 55 | doel als OpenAmber geen tapwater-setpoint doorgeeft |
 | `condens_marge` | 2 | waarschuwen als de aanvoer minder dan zoveel graden boven het dauwpunt komt (bij koelen) |
