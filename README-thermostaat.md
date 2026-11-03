@@ -1,6 +1,6 @@
 # OpenAmber Thermostaat
 
-Een ronde draaiknop-thermostaat (WT32S3-21S / ZX2D10GE01R-W4848#B, ESP32-S3) die via ESP-NOW
+Een ronde draaiknop-thermostaat (WT32S3-21S / ZX2D10GE01R-V4848, ESP32-S3) die via ESP-NOW
 praat met het OpenAmber-display op de warmtepomp. De thermostaat toont statussen en temperaturen
 en laat je het setpoint en de modus aanpassen. Alle andere instellingen doe je op OpenAmber zelf.
 

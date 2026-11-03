@@ -70,7 +70,7 @@ globals:
   - id: pending_mode              # modus voor het volgende commando; 3 = ongewijzigd laten
     type: int
     initial_value: '3'
-  - id: knob_context              # 0 = Home (setpoint instellen), 1 = Overview, 2 = modus kiezen, 3 = koppelen
+  - id: knob_context              # 0 = Temperatuur (setpoint instellen), 1 = menu, 2 = modus kiezen, 3 = koppelen, 4 = overzicht
     type: int
     initial_value: '0'
 
@@ -86,8 +86,8 @@ esphome:
         # Daarom hier doorzichtig maken (blijft werken na een nieuwe export uit de Designer).
         - lambda: |-
             lv_obj_set_style_bg_opa(lv_layer_top(), LV_OPA_TRANSP, 0);
-        - lvgl.page.show: canvas_2           # Home is de startpagina
-        # Statusicoontjes op Overview: kleur, symbool en zichtbaarheid volgen de status van OpenAmber
+        - lvgl.page.show: canvas_2           # Temperatuur is de startpagina
+        # Statusicoontjes: kleur, symbool en zichtbaarheid volgen de status van OpenAmber
         - script.execute: update_status_icons
         # Nog niet gekoppeld? Open dan na een paar seconden vanzelf de koppelpagina
         - delay: 3s
@@ -389,15 +389,6 @@ sensor:
     device_class: temperature
     accuracy_decimals: 1
     internal: false
-    on_value:
-      then:
-        - lvgl.label.update:
-            id: overview_label_tw
-            text: !lambda |-
-              if (std::isnan(x)) return std::string("--");
-              std::string s = str_sprintf("%.1f˚C", x);
-              for (char &c : s) if (c == '.') c = ',';
-              return s;
 
   - platform: packet_transport
     provider: openamber
@@ -606,17 +597,20 @@ script:
           id(pin_ok) = mine > 0 && id(remote_pin).has_state() &&
                        lroundf(id(remote_pin).state) == mine;
 
-  # Korte druk op de knop: op de koppelpagina bevestigen, anders tussen Home en Overview wisselen
+  # Korte druk op de knop; wat hij doet hangt af van de pagina:
+  #   Temperatuur -> menu (met Temperatuur gekozen)    Menu -> het gekozen item openen
+  #   Modus -> bevestigen    Koppelen -> bevestigen    Overzicht -> terug naar het menu
 
   - id: button_short
     then:
-      - if:
-          condition:
-            lambda: 'return id(knob_context) == 3;'
-          then:
-            - script.execute: pair_confirm
-          else:
-            - script.execute: toggle_overview
+      - lambda: |-
+          switch (id(knob_context)) {
+            case 0: id(menu_index) = 0; id(show_menu).execute(); break;
+            case 1: id(menu_open).execute(); break;
+            case 2: id(modus_apply).execute(); break;
+            case 3: id(pair_confirm).execute(); break;
+            default: id(show_menu).execute(); break;
+          }
 
   # Acties van de drukknop; het bordbestand roept deze aan bij een korte of lange druk
   - id: knob_press_short
@@ -630,12 +624,16 @@ script:
             - script.execute: reset_backlight_timer
             - script.execute: button_short
 
+  # Lange druk: terug naar Temperatuur (op Temperatuur zelf doet het niets). De koppelpagina
+  # open je via het menu.
   - id: knob_press_long
     then:
       - script.execute: reset_backlight_timer
-      - script.execute: show_pair
-
-  # Koppelpagina openen; de knop kiest dan uit de lijst
+      - if:
+          condition:
+            lambda: 'return id(knob_context) != 0;'
+          then:
+            - script.execute: show_home
 
   - id: send_command
     mode: restart
@@ -665,11 +663,12 @@ script:
           id: user_is_adjusting
           value: 'false'
 
-  # Scherm en ledring 60 s aan na bediening of start
+  # Scherm en ledring 60 s aan na bediening of start; ook de pagina-timeout (30 s) loopt opnieuw
 
   - id: reset_backlight_timer
     mode: restart
     then:
+      - script.execute: page_timeout
       - light.turn_on:
           id: backlight
           brightness: 100%
@@ -686,22 +685,8 @@ script:
           transition_length: 1s
 
 
-  # Boog en labels bijwerken met het setpoint van de gekozen modus
-  # (koelen: hoog setpoint, anders laag setpoint). De boog loopt van 0 tot 100 en toont
-  # waar het setpoint binnen het bereik van de modus ligt:
-  #   verwarmen 15-25 graden (target_low), koelen 18-30 graden (target_high).
-
-  - id: toggle_overview
-    then:
-      - if:
-          condition:
-            lambda: 'return id(knob_context) == 0;'
-          then:
-            - script.execute: show_overview
-          else:
-            - script.execute: show_home
-
-  # Wordt bij elke klik van de draaiknop aangeroepen; delta is +1 (rechtsom) of -1 (linksom)
+  # De scripts voor het scherm (pagina's wisselen, draaiknop per pagina, iconen) staan in
+  # thermostat/ui_scripts.yaml.
 
 # ---------------------------------------------------------------------
 # 7. ESP-NOW (packet_transport)
@@ -736,18 +721,10 @@ packet_transport:
       - id: cmd
         broadcast_id: cmd
 
-# Elke 2 s de lijst op de koppelpagina bijwerken, maar alleen zolang die pagina open is
 interval:
-  - interval: 15s                 # kamertemperatuur van de BME680 op Overview tonen
+  - interval: 15s                 # kamertemperatuur van de BME680 op de temperatuurpagina tonen
     then:
-      - lvgl.label.update:
-          id: overview_label_roomtemp
-          text: !lambda |-
-            float x = id(bme_temp).state;
-            if (std::isnan(x)) return std::string("--");
-            std::string s = str_sprintf("%.1f˚C", x);
-            for (char &c : s) if (c == '.') c = ',';
-            return s;
+      - script.execute: update_room_temp
 
   - interval: 5s                  # verbinding en condenswaarschuwing bijwerken
     then:
@@ -762,13 +739,18 @@ interval:
                              tuo < dp + ${condens_marge};
       - script.execute: update_status_icons
 
-  - interval: 2s
+  - interval: 2s                  # alleen de pagina die open staat bijwerken
     then:
       - if:
           condition:
             lambda: 'return id(knob_context) == 3;'
           then:
-            - script.execute: pair_refresh
+            - script.execute: pair_refresh          # lijst op de koppelpagina
+      - if:
+          condition:
+            lambda: 'return id(knob_context) == 4;'
+          then:
+            - script.execute: update_overzicht      # waarden op de overzichtspagina
 
 # ---------------------------------------------------------------------
 # 8. SCHERM (LVGL)
@@ -778,4 +760,5 @@ interval:
 # ---------------------------------------------------------------------
 packages:
   ui_designer: !include openamber/thermostat/ui_designer.yaml
+  ui_fonts: !include openamber/thermostat/ui_fonts.yaml
   ui_scripts: !include openamber/thermostat/ui_scripts.yaml

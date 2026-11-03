@@ -2,71 +2,339 @@
 # Thermostaat - scripts die iets met het scherm doen (LVGL)
 # Verwijzen naar widget-id's uit ui_designer.yaml: hernoem je een widget in de
 # Designer, pas het dan ook hier aan.
+#
+# Pagina's (knob_context):
+#   0 = Temperatuur  canvas_2    setpoint instellen met de knop
+#   1 = Menu         canvas_12   carrousel met loop (5 items, geselecteerde in het midden)
+#   2 = Modus        canvas_14   Verwarmen / Koelen / Uit kiezen
+#   3 = Koppelen     canvas_15   OpenAmber kiezen uit de lijst
+#   4 = Overzicht    canvas_13   alleen lezen: temperaturen en compressor
+#
+# Knop:  Temperatuur: korte druk = menu          Menu: korte druk = het gekozen item openen
+#        Modus: korte druk = bevestigen          Koppelen: korte druk = bevestigen
+#        Overzicht: korte druk = terug naar menu
+#        Lange druk (overal) = terug naar Temperatuur
+#        Na 30 s zonder bediening gaat elke pagina (behalve Koppelen) terug naar Temperatuur.
 # =====================================================================
+
+globals:
+  - id: menu_index                # welk menu-item staat in het midden (0..4)
+    type: int
+    initial_value: '0'
+  - id: modus_keuze               # keuze op de modus-pagina: 0 = Verwarmen, 1 = Koelen, 2 = Uit
+    type: int
+    initial_value: '0'
+
+esphome:
+  on_boot:
+    - priority: -101              # nadat LVGL en de pagina's er zijn
+      then:
+        # Icoonfonts met alle glyphs die het script nodig heeft (zie ui_fonts.yaml)
+        - lvgl.widget.update: {id: carrousel_menu_icon_1, text_font: menu_icons_28}
+        - lvgl.widget.update: {id: carrousel_menu_icon_2, text_font: menu_icons_33}
+        - lvgl.widget.update: {id: carrousel_menu_icon_3, text_font: menu_icons_40}
+        - lvgl.widget.update: {id: carrousel_menu_icon_4, text_font: menu_icons_33}
+        - lvgl.widget.update: {id: carrousel_menu_icon_5, text_font: menu_icons_28}
+        - lvgl.widget.update: {id: climate_icon_heatcool, text_font: menu_icons_40}
+        - lvgl.widget.update: {id: modus_icon, text_font: modus_icons_80}
+        - script.execute: menu_render
+        - script.execute: refresh_setpoint_ui
+        - script.execute: update_room_temp
+        - script.execute: update_status_icons
+
 script:
-  - id: update_status_icons       # zet symbool, kleur en zichtbaarheid van de statusicoontjes op Overview
+  # ---------------------------------------------------------------------
+  # Temperatuurpagina: statusiconen, waarschuwing en foutcode
+  # ---------------------------------------------------------------------
+  - id: update_status_icons       # zet symbool, kleur en zichtbaarheid van de iconen en de waarschuwing
     mode: restart
     then:
       - lambda: |-
           auto on = [](binary_sensor::BinarySensor *b) { return b->has_state() && b->state; };
-          bool link = id(link_ok);
+          auto toon = [](lv_obj_t *o, bool zichtbaar) {
+            if (zichtbaar) lv_obj_clear_flag(o, LV_OBJ_FLAG_HIDDEN);
+            else           lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
+          };
+          auto kleur = [](lv_obj_t *o, uint32_t hex) { lv_obj_set_style_text_color(o, lv_color_hex(hex), 0); };
+
+          bool link  = id(link_ok);
+          bool twa   = on(id(remote_twa));
           bool bezig = on(id(remote_da)) || on(id(remote_twp)) || on(id(remote_twv));
+          bool lega  = twa && on(id(remote_lega));
+          float cf   = id(rx_cf).state;                       // NaN zolang er niets is ontvangen
+          bool draait = link && cf > 0.5f;
 
-          // Geen verbinding met OpenAmber: alleen het "link uit"-icoon, de rest zou verouderd zijn
-          if (link) lv_obj_add_flag(id(overview_icon_link), LV_OBJ_FLAG_HIDDEN);
-          else      lv_obj_clear_flag(id(overview_icon_link), LV_OBJ_FLAG_HIDDEN);
+          // Backupelement (bliksem)
+          toon(id(climate_icon_backupheater), link && on(id(remote_bu)));
 
-          // Eén icoon voor de actieve modus; bij meerdere tegelijk geldt deze voorrang:
-          // ontdooien, legionellarun, tapwater, koelen, verwarmen, standby
+          // Compressor draait (warmtepomp-icoon)
+          toon(id(climate_icon_compressor), draait);
+
+          // Op dezelfde plek: legionellarun (bacterie) gaat voor tapwater (kraan).
+          // Het kraantje is blauw zolang er tapwater wordt gemaakt, anders gedimd.
+          toon(id(climate_icon_legionella), link && lega);
+          kleur(id(climate_icon_legionella), 0x2ECC71);
+          toon(id(climate_icon_tapwater), link && twa && !lega);
+          kleur(id(climate_icon_tapwater), bezig ? 0x2EA8FF : 0x4A4F5C);
+
+          // Verwarmen / koelen / ontdooien / standby: een icoon, met deze voorrang
           if (!link) {
-            lv_obj_add_flag(id(overview_icon_mode_heatcooltapleg), LV_OBJ_FLAG_HIDDEN);
+            toon(id(climate_icon_heatcool), false);
           } else {
             const char *symbool;
-            uint32_t kleur;
-            if (on(id(remote_dfr)))                          { symbool = "\U000F12CB"; kleur = 0x00BCD4; }  // ontdooien
-            else if (on(id(remote_twa)) && on(id(remote_lega))) { symbool = "\U000F0ED5"; kleur = 0x2ECC71; }  // legionella: bacterie
-            else if (bezig)                                  { symbool = "\U000F1B29"; kleur = 0x00A8FF; }  // tapwater maken: kraantje
-            else if (on(id(remote_cd)))                      { symbool = "\U000F0717"; kleur = 0x00A8FF; }  // koelen: sneeuwvlok
-            else if (on(id(remote_wv)))                      { symbool = "\U000F0238"; kleur = 0xFF3B00; }  // verwarmen: vlam
-            else                                             { symbool = "\U000F0906"; kleur = 0x808080; }  // standby
-            lv_label_set_text(id(overview_icon_mode_heatcooltapleg), symbool);
-            lv_obj_set_style_text_color(id(overview_icon_mode_heatcooltapleg), lv_color_hex(kleur), 0);
-            lv_obj_clear_flag(id(overview_icon_mode_heatcooltapleg), LV_OBJ_FLAG_HIDDEN);
+            uint32_t k;
+            if (on(id(remote_dfr)))      { symbool = "\U000F12CB"; k = 0x00BCD4; }   // ontdooien
+            else if (on(id(remote_cd)))  { symbool = "\U000F0717"; k = 0x2EA8FF; }   // koelen
+            else if (on(id(remote_wv)))  { symbool = "\U000F0238"; k = 0xFF5100; }   // verwarmen
+            else                         { symbool = "\U000F0906"; k = 0x4A4F5C; }   // standby
+            lv_label_set_text(id(climate_icon_heatcool), symbool);
+            kleur(id(climate_icon_heatcool), k);
+            toon(id(climate_icon_heatcool), true);
           }
 
-          // Backupelement aan: klein bliksemicoontje naast het modusicoon
-          if (link && on(id(remote_bu))) lv_obj_clear_flag(id(overview_icon_backupheater), LV_OBJ_FLAG_HIDDEN);
-          else                           lv_obj_add_flag(id(overview_icon_backupheater), LV_OBJ_FLAG_HIDDEN);
+          // Foutcode omzetten naar tekst. 1xx = P, 2xx = F, 3xx = E, 4xx = overige (zie thermostat_link.yaml).
+          // De teksten zijn ingekort uit de namen op OpenAmber, zodat ze op het scherm passen.
+          auto fout_tekst = [](int c) -> std::string {
+            struct E { int code; const char *tekst; };
+            static const E tabel[] = {
+              {101, "Bedrijfstroom"}, {102, "Bedrijfstroom"}, {103, "Compressorstart"},
+              {105, "Hoge druk"}, {106, "Laag drukverschil"}, {107, "Voorverwarming"},
+              {108, "Sensor persgasdruk"}, {109, "Sensor verdamper"}, {110, "Voedingsspanning"},
+              {111, "Compr. begrenzing"}, {112, "Compr. begrenzing"}, {113, "Laag drukverschil"},
+              {201, "Sensor buiten"}, {202, "Sensor verdamper"}, {203, "Sensor persgas"},
+              {204, "Sensor zuiggas"}, {205, "Zuiggasdruk"}, {206, "Persgasdruk"},
+              {207, "Hogedrukbeveiliging"}, {209, "Ventilatormotor"}, {210, "Ventilatormotor"},
+              {216, "Sensor aanvoer"}, {217, "Sensor retour"}, {218, "Sensor condensor"},
+              {301, "Communicatie PCB"}, {302, "Inverter communicatie"}, {303, "Bedrijfsstroom"},
+              {304, "Bedrijfsstroom"}, {305, "Storing inverter"}, {306, "Storing VCD-module"},
+              {307, "Voedingsspanning"}, {308, "EEPROM"},
+              {401, "Pomp start timeout"}, {402, "Compressor start"}, {403, "Pomp stop timeout"},
+              {404, "Modbus timeout"}, {405, "3-wegklep"}, {406, "Failsafe binnendeel"},
+              {407, "Failsafe communicatie"}, {408, "EEPROM binnendeel"}, {409, "Pompalarm"},
+            };
+            const char *t = nullptr;
+            for (const auto &e : tabel) if (e.code == c) { t = e.tekst; break; }
+            char letter = (c >= 100 && c < 200) ? 'P' : (c >= 200 && c < 300) ? 'F' : (c >= 300 && c < 400) ? 'E' : 0;
+            std::string s;
+            if (letter) {
+              char b[8];
+              snprintf(b, sizeof(b), "%c%02d", letter, c % 100);
+              s = b;
+              if (t) { s += " - "; s += t; }
+            } else {
+              s = t ? t : "Storing";
+            }
+            return s;
+          };
 
-          // Fout (rood) gaat voor waarschuwing (oranje); niets aan de hand = verborgen
-          if (link && on(id(remote_err))) {
-            lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFF0000), 0);
-            lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          } else if (link && on(id(remote_warn))) {
-            lv_obj_set_style_text_color(id(overview_icon_errorwarning), lv_color_hex(0xFFA500), 0);
-            lv_obj_clear_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_errorwarning), LV_OBJ_FLAG_HIDDEN);
+          // Waarschuwing: geen verbinding gaat voor fout, fout voor waarschuwing, dan condens
+          int ec = std::isnan(id(rx_ec).state) ? 0 : (int) lroundf(id(rx_ec).state);
+          std::string tekst;
+          uint32_t k = 0xFF5100;
+          bool melding = true;
+          if (!link)                          { tekst = "Geen verbinding"; k = 0x6B7080; }
+          else if (on(id(remote_err)))        { tekst = ec > 0 ? fout_tekst(ec) : "Storing"; k = 0xFF2020; }
+          else if (on(id(remote_warn)))       { tekst = ec > 0 ? fout_tekst(ec) : "Waarschuwing"; k = 0xFF5100; }
+          else if (id(condens_warn))          { tekst = "Condensgevaar"; k = 0x2EA8FF; }
+          else                                { melding = false; }
+          if (melding) {
+            lv_label_set_text(id(climate_label_warning), tekst.c_str());
+            kleur(id(climate_label_warning), k);
+            kleur(id(climate_icon_warning), k);
+          }
+          toon(id(climate_label_warning), melding);
+          toon(id(climate_icon_warning), melding);
+
+  # Kamertemperatuur (BME680) onderaan op de temperatuurpagina
+  - id: update_room_temp
+    then:
+      - lvgl.label.update:
+          id: climate_label_temp
+          text: !lambda |-
+            float x = id(bme_temp).state;
+            if (std::isnan(x)) return std::string("--");
+            std::string s = str_sprintf("%.1f°", x);
+            for (char &c : s) if (c == '.') c = ',';
+            return s;
+
+  # Doeltemperatuur van de gekozen modus (koelen: hoog setpoint, anders laag) en de modus eronder
+  - id: refresh_setpoint_ui
+    then:
+      - lvgl.label.update:
+          id: climate_label_setpoint
+          text: !lambda |-
+            float sp = (id(mode_code) == 2) ? id(target_high).state : id(target_low).state;
+            if (std::isnan(sp)) return std::string("--");
+            std::string s = str_sprintf("%.1f", sp);
+            for (char &c : s) if (c == '.') c = ',';
+            return s;
+      - lvgl.label.update:
+          id: climate_label_instelling
+          text: !lambda |-
+            if (id(mode_code) == 1) return std::string("Verwarmen");
+            if (id(mode_code) == 2) return std::string("Koelen");
+            return std::string("Uit");
+
+  # ---------------------------------------------------------------------
+  # Overzichtspagina: alleen lezen
+  # ---------------------------------------------------------------------
+  - id: update_overzicht
+    then:
+      - lambda: |-
+          // Kleur uit het verloop van de ring (blauw -> roze), laag bij lo en hoog bij hi
+          auto verloop = [](float v, float lo, float hi) -> lv_color_t {
+            if (std::isnan(v)) return lv_color_hex(0x6B7080);
+            float f = (v - lo) / (hi - lo);
+            if (f < 0) f = 0;
+            if (f > 1) f = 1;
+            return lv_color_make((uint8_t) (0x2E + f * (0xFF - 0x2E)),
+                                 (uint8_t) (0xA8 + f * (0x4D - 0xA8)),
+                                 (uint8_t) (0xFF + f * (0x7E - 0xFF)));
+          };
+          auto graden = [](float v, int dec) -> std::string {
+            if (std::isnan(v)) return std::string("--");
+            char b[16];
+            snprintf(b, sizeof(b), dec == 0 ? "%.0f°" : "%.1f°", v);
+            std::string s = b;
+            for (char &c : s) if (c == '.') c = ',';
+            return s;
+          };
+          float ta = id(temperature_outside_ta).state;
+          float tuo = id(outlet_temperature_tuo).state;
+          float tui = id(inlet_temperature_tui).state;
+          float tw = id(dhw_temperature_tw_sensor).state;
+          float cf = id(rx_cf).state;
+
+          lv_label_set_text(id(overzicht_label_buiten_value), graden(ta, 0).c_str());
+          lv_obj_set_style_text_color(id(overzicht_label_buiten_value), verloop(ta, -10, 30), 0);
+          lv_label_set_text(id(overzicht_label_aanvoer_value), graden(tuo, 1).c_str());
+          lv_obj_set_style_text_color(id(overzicht_label_aanvoer_value), verloop(tuo, 20, 55), 0);
+          lv_label_set_text(id(overzicht_label_retour_value), graden(tui, 1).c_str());
+          lv_obj_set_style_text_color(id(overzicht_label_retour_value), verloop(tui, 20, 55), 0);
+          lv_label_set_text(id(overzicht_label_deltat_value), graden(tuo - tui, 1).c_str());   // NaN als een van de twee ontbreekt
+          lv_label_set_text(id(overzicht_label_tapwater_value), graden(tw, 0).c_str());
+          lv_obj_set_style_text_color(id(overzicht_label_tapwater_value), verloop(tw, 30, 60), 0);
+          char hz[16];
+          if (std::isnan(cf)) snprintf(hz, sizeof(hz), "--");
+          else                snprintf(hz, sizeof(hz), "%d Hz", (int) lroundf(cf));
+          lv_label_set_text(id(overzicht_label_compfreq_value), hz);
+
+  # ---------------------------------------------------------------------
+  # Menu: carrousel met loop. Vijf rijen, de geselecteerde staat in rij 3.
+  # De rijen schuiven niet echt: bij elke klik krijgen ze een andere tekst en icoon.
+  # ---------------------------------------------------------------------
+  - id: menu_render
+    then:
+      - lambda: |-
+          static const char *namen[5] = {"Temperatuur", "Overzicht", "Foutcodes", "Modus", "Koppelen"};
+          static const char *iconen[5] = {"\U000F0393", "\U000F0A1D", "\U000F0026", "\U000F0493", "\U000F0337"};
+          lv_obj_t *lbl[5] = {id(carrousel_menu_label_1), id(carrousel_menu_label_2), id(carrousel_menu_label_3),
+                              id(carrousel_menu_label_4), id(carrousel_menu_label_5)};
+          lv_obj_t *ico[5] = {id(carrousel_menu_icon_1), id(carrousel_menu_icon_2), id(carrousel_menu_icon_3),
+                              id(carrousel_menu_icon_4), id(carrousel_menu_icon_5)};
+          for (int r = 0; r < 5; r++) {
+            int k = ((id(menu_index) + r - 2) % 5 + 5) % 5;     // rij 3 (r = 2) is het gekozen item
+            lv_label_set_text(lbl[r], namen[k]);
+            lv_label_set_text(ico[r], iconen[k]);
           }
 
-          // Kraantje naast de tapwatertemperatuur: alleen als tapwater aanwezig is; blauw als bezig, anders grijs
-          if (on(id(remote_twa))) {
-            lv_obj_set_style_text_color(id(overview_icon_tw), lv_color_hex(bezig ? 0x00A8FF : 0x808080), 0);
-            lv_obj_clear_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
-          } else {
-            lv_obj_add_flag(id(overview_icon_tw), LV_OBJ_FLAG_HIDDEN);
+  # Het gekozen menu-item openen
+  - id: menu_open
+    then:
+      - lambda: |-
+          switch (id(menu_index)) {
+            case 0: id(show_home).execute(); break;
+            case 1: id(show_overzicht).execute(); break;
+            case 2: id(show_home).execute(); break;     // Foutcodes: nog geen eigen pagina; de foutmelding staat op Temperatuur
+            case 3: id(show_modus).execute(); break;
+            case 4: id(show_pair).execute(); break;
           }
+
+  # ---------------------------------------------------------------------
+  # Modus-pagina: draaien kiest, korte druk bevestigt
+  # ---------------------------------------------------------------------
+  - id: modus_render
+    then:
+      - lambda: |-
+          const char *symbool, *tekst;
+          uint32_t k;
+          switch (id(modus_keuze)) {
+            case 0:  symbool = "\U000F0238"; tekst = "Verwarmen"; k = 0xFF5100; break;
+            case 1:  symbool = "\U000F0717"; tekst = "Koelen";    k = 0x2EA8FF; break;
+            default: symbool = "\U000F0906"; tekst = "Uit";       k = 0x6B7080; break;
+          }
+          lv_label_set_text(id(modus_icon), symbool);
+          lv_obj_set_style_text_color(id(modus_icon), lv_color_hex(k), 0);
+          lv_label_set_text(id(modus_label), tekst);
+
+  - id: modus_apply
+    then:
+      - lambda: |-
+          // Alleen versturen als de keuze anders is dan de huidige modus
+          static const char *opties[3] = {"Verwarmen", "Koelen", "Uit"};
+          static const int codes[3] = {1, 2, 0};
+          int keuze = id(modus_keuze);
+          if (codes[keuze] != id(mode_code)) id(hp_mode).make_call().set_option(opties[keuze]).perform();
+      - script.execute: show_home
+
+  # ---------------------------------------------------------------------
+  # Pagina's wisselen en de draaiknop de bijbehorende context geven
+  # ---------------------------------------------------------------------
+  - id: show_home
+    then:
+      - globals.set:
+          id: knob_context
+          value: '0'
+      - lvgl.page.show: canvas_2
+
+  - id: show_menu
+    then:
+      - globals.set:
+          id: knob_context
+          value: '1'
+      - script.execute: menu_render
+      - lvgl.page.show: canvas_12
+
+  - id: show_overzicht
+    then:
+      - globals.set:
+          id: knob_context
+          value: '4'
+      - script.execute: update_overzicht
+      - lvgl.page.show: canvas_13
+
+  - id: show_modus
+    then:
+      - globals.set:
+          id: knob_context
+          value: '2'
+      - lambda: |-
+          id(modus_keuze) = (id(mode_code) == 1) ? 0 : (id(mode_code) == 2) ? 1 : 2;
+      - script.execute: modus_render
+      - lvgl.page.show: canvas_14
 
   - id: show_pair
     then:
       - globals.set:
           id: knob_context
           value: '3'
-      - lvgl.page.show: canvas_11
+      - lvgl.page.show: canvas_15
       - script.execute: pair_refresh
 
-  # Lijst met gevonden OpenAmbers bijwerken (elke 2 s zolang de koppelpagina open is)
+  # Na 30 s zonder bediening terug naar Temperatuur (niet vanaf Koppelen: daar moet je rustig kunnen kiezen)
+  - id: page_timeout
+    mode: restart
+    then:
+      - delay: 30s
+      - if:
+          condition:
+            lambda: 'return id(knob_context) != 0 && id(knob_context) != 3;'
+          then:
+            - script.execute: show_home
 
+  # ---------------------------------------------------------------------
+  # Koppelen: lijst met gevonden OpenAmbers bijwerken (elke 2 s zolang de pagina open is)
+  # ---------------------------------------------------------------------
   - id: pair_refresh
     mode: restart
     then:
@@ -105,8 +373,7 @@ script:
           if (leeg) lv_obj_clear_flag(id(pair_spinner), LV_OBJ_FLAG_HIDDEN);
           else      lv_obj_add_flag(id(pair_spinner), LV_OBJ_FLAG_HIDDEN);
 
-  # Keuze in de lijst bevestigen: code bewaren (of annuleren) en terug naar Home
-
+  # Keuze in de lijst bevestigen: code bewaren (of annuleren) en terug naar Temperatuur
   - id: pair_confirm
     then:
       - lambda: |-
@@ -119,60 +386,9 @@ script:
           }
       - script.execute: show_home
 
-  # Bouwt het commando (volgnummer + modus + setpoints) 600 ms na de laatste
-  # draai-impuls of moduskeuze en publiceert het in de sensor "cmd".
-
-  - id: refresh_setpoint_ui
-    then:
-      - lvgl.arc.update:
-          id: thermostat_arc_setpoint
-          value: !lambda |-
-            bool koelen = (id(mode_code) == 2);
-            float sp = koelen ? id(target_high).state : id(target_low).state;
-            float min_sp = koelen ? 18.0f : 15.0f;
-            float max_sp = koelen ? 30.0f : 25.0f;
-            if (std::isnan(sp)) return 0;
-            float pct = (sp - min_sp) / (max_sp - min_sp) * 100.0f;
-            if (pct < 0) pct = 0;
-            if (pct > 100) pct = 100;
-            return (int) lroundf(pct);
-      # Home: grote doeltemperatuur
-      - lvgl.label.update:
-          id: thermostat_label_setpoint
-          text: !lambda |-
-            float sp = (id(mode_code) == 2) ? id(target_high).state : id(target_low).state;
-            if (std::isnan(sp)) return std::string("--");
-            std::string s = str_sprintf("%.1f˚C", sp);
-            for (char &c : s) if (c == '.') c = ',';
-            return s;
-      # Overview: doeltemperatuur
-      - lvgl.label.update:
-          id: overview_label_setpoint
-          text: !lambda |-
-            float sp = (id(mode_code) == 2) ? id(target_high).state : id(target_low).state;
-            if (std::isnan(sp)) return std::string("--");
-            std::string s = str_sprintf("%.1f˚C", sp);
-            for (char &c : s) if (c == '.') c = ',';
-            return s;
-
-  # Pagina's wisselen en de draaiknop de bijbehorende context geven
-
-  - id: show_home
-    then:
-      - globals.set:
-          id: knob_context
-          value: '0'
-      - lvgl.page.show: canvas_2
-
-  - id: show_overview
-    then:
-      - globals.set:
-          id: knob_context
-          value: '1'
-      - lvgl.page.show: canvas_5
-
-  # Klik op de knop: vanaf Home naar Overview, vanaf elk ander scherm terug naar Home
-
+  # ---------------------------------------------------------------------
+  # Draaiknop: wat een klik doet hangt af van de pagina (knob_context)
+  # ---------------------------------------------------------------------
   - id: knob_step
     parameters:
       delta: int
@@ -186,7 +402,7 @@ script:
             - script.stop: knob_step
       - script.execute: reset_backlight_timer
 
-      # Context 0 = Home: setpoint van de gekozen modus instellen
+      # 0 = Temperatuur: setpoint van de gekozen modus instellen
       # (koelen: hoog setpoint, anders laag setpoint, zoals het scherm van OpenAmber)
       - if:
           condition:
@@ -225,28 +441,25 @@ script:
             - script.execute: send_command
             - script.execute: release_adjusting
 
-      # Context 1 = Overview: hier komt later de navigatie door het menu
-      # (nu doet draaien hier niets)
+      # 1 = Menu: door de carrousel draaien (rond, dus na het laatste item weer het eerste)
+      - if:
+          condition:
+            lambda: 'return id(knob_context) == 1;'
+          then:
+            - lambda: |-
+                id(menu_index) = ((id(menu_index) + delta) % 5 + 5) % 5;
+            - script.execute: menu_render
 
-      # Context 2 = modus kiezen (Uit / Verwarmen / Koelen); nog niet bereikbaar vanuit de GUI.
-      # De keuze verstuurt zelf een commando via de set_action van de select.
+      # 2 = Modus: kiezen tussen Verwarmen, Koelen en Uit (draait rond); bevestigen met de korte druk
       - if:
           condition:
             lambda: 'return id(knob_context) == 2;'
           then:
-            - if:
-                condition:
-                  lambda: 'return delta > 0;'
-                then:
-                  - select.next:
-                      id: hp_mode
-                      cycle: false
-                else:
-                  - select.previous:
-                      id: hp_mode
-                      cycle: false
+            - lambda: |-
+                id(modus_keuze) = ((id(modus_keuze) + delta) % 3 + 3) % 3;
+            - script.execute: modus_render
 
-      # Context 3 = koppelpagina: door de lijst met gevonden OpenAmbers lopen
+      # 3 = Koppelen: door de lijst met gevonden OpenAmbers lopen
       - if:
           condition:
             lambda: 'return id(knob_context) == 3;'
@@ -258,3 +471,5 @@ script:
                 if (sel < 0) sel = 0;
                 if (sel > n - 1) sel = n - 1;
                 lv_roller_set_selected(r, sel, LV_ANIM_ON);
+
+      # 4 = Overzicht: alleen lezen, draaien doet niets

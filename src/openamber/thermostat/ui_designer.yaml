@@ -1,28 +1,72 @@
-# =====================================================================
-# Thermostaat - GUI uit de LVGL Designer (lettertypen, kleuren, pagina's)
-# Dit bestand mag je in zijn geheel vervangen door een nieuwe export uit de Designer.
-#   canvas_2 = Home (standaard)   canvas_5 = Overview   canvas_11 = Koppelen
-# Handmatig in openamber-thermostat.yaml (dus niet hier): lvgl.buffer_size.
-# Let op in de Designer: verwijder ongebruikte lettertypen (Roboto, Material+Icons) en zet
-# ergens een klein verborgen label met de symbolen die alleen het script gebruikt
-# (sneeuwvlok, bacterie, standby, ontdooien; lettertype mdi_icons_40), anders verdwijnen ze
-# uit de lettertypelijst bij een nieuwe export.
-# =====================================================================
-
 font:
   # >>> LVGL Designer — managed font items >>>
+  - file:
+      type: gfonts
+      family: Quicksand
+      weight: 700
+    id: quicksand_100b
+    size: 100
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
   - file: "gfonts://Quicksand"
-    id: quicksand_32
-    size: 32
+    id: quicksand_16
+    size: 16
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file: "gfonts://Quicksand"
+    id: quicksand_24
+    size: 24
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file: "gfonts://Quicksand"
+    id: quicksand_28
+    size: 28
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file:
+      type: gfonts
+      family: Quicksand
+      weight: 700
+    id: quicksand_28b
+    size: 28
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file: "gfonts://Quicksand"
+    id: quicksand_30
+    size: 30
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file: "gfonts://Quicksand"
+    id: quicksand_33
+    size: 33
+    bpp: 4
+    glyphsets: [GF_Latin_Core]
+  - file: "gfonts://Quicksand"
+    id: quicksand_40
+    size: 40
     bpp: 4
     glyphsets: [GF_Latin_Core]
   - file:
       url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
       type: web
-    id: mdi_icons_15
-    size: 15
+    id: mdi_icons_28
+    size: 28
     glyphs: [
-      "\U000F140B",  # Lightning Bolt
+      "\U000F0393",  # Thermostat
+      "\U000F0337",  # Link
+      "\U000F0A1D",  # View Dashboard Outline
+      "\U000F0493",  # Cog
+    ]
+  - file:
+      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+      type: web
+    id: mdi_icons_33
+    size: 33
+    glyphs: [
+      "\U000F0393",  # Thermostat
+      "\U000F0337",  # Link
+      "\U000F0A1D",  # View Dashboard Outline
+      "\U000F0493",  # Cog
     ]
   - file:
       url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
@@ -30,273 +74,763 @@ font:
     id: mdi_icons_40
     size: 40
     glyphs: [
-      "\U000F0028",  # Alert Circle
-      "\U000F0F54",  # Home Thermostat
-      "\U000F0393",  # Thermostat
-      "\U000F1B29",  # Faucet
-      "\U000F0238",  # Fire
-      "\U000F0338",  # Link Off
-      "\U000F0717",  # Snowflake
-      "\U000F0906",  # Power Standby
+      "\U000F0241",  # Flash
       "\U000F0ED5",  # Bacteria
-      "\U000F12CB",  # Snowflake Melt
-    ]
-  - file:
-      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
-      type: web
-    id: mdi_icons_63
-    size: 63
-    glyphs: [
-      "\U000F0F54",  # Home Thermostat
+      "\U000F1B29",  # Faucet
+      "\U000F1A44",  # Heat Pump Outline
+      "\U000F0238",  # Fire
+      "\U000F0026",  # Alert
     ]
   # <<< end managed font <<<
-color:
-  - id: color_black
-    hex: "0A0A0A"
-  - id: color_white
-    hex: "FFFFFF"
-  - id: color_gray
-    hex: "AAAAAA"
-  - id: color_orange
-    hex: "FFB000"
-  - id: color_red
-    hex: "FF4500"
-  - id: color_blue
-    hex: "00A8FF"
-  - id: color_green
-    hex: "2ECC71"
-  - id: color_dark_red
-    hex: "330000"
-
 # >>> LVGL Designer - generated from the canvas. >>>
 # This block is regenerated from the canvas - edits here are not preserved.
 lvgl:
-  top_layer:
-    bg_color: color_black
-    scrollbar_mode: "OFF"
   pages:
     - id: canvas_2
-      bg_color: 0x111827
+      bg_opa: 100%
       pad_all: 0
       scrollbar_mode: "OFF"
       widgets:
-        - arc:
-            id: thermostat_arc_setpoint
+        - obj:
+            id: climate_background
             x: 0
             y: 0
             width: 480
             height: 480
             align: CENTER
-            value: 50
-            min_value: 0
-            max_value: 100
-            adjustable: true
-            start_angle: 135
-            end_angle: 45
-            arc_color: 0x2B2B2B
-            arc_width: 16
-            arc_opa: 100%
-            indicator:
-              arc_color: 0xFDC83E
-              arc_width: 16
-              arc_opa: 87%
-              arc_rounded: true
-            knob:
-              bg_color: 0xFE8929
-              pad_all: 5
-            radius: 11
-            pad_all: 13
-            blur_radius: 8
-            blur_backdrop: true
+            bg_color: 0x15161A
+            border_width: 5
+            border_color: 0x713FAD
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: climate_bezel
+                  x: -5
+                  y: -5
+                  width: 470
+                  height: 470
+                  align: CENTER
+                  bg_color: 0x15161A
+                  border_width: 6
+                  border_color: 0x2A2D35
+                  radius: 32767
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+              - meter:
+                  id: climate_meter
+                  x: -5
+                  y: -5
+                  width: 450
+                  height: 450
+                  align: CENTER
+                  scales:
+                    - range_from: 0
+                      range_to: 100
+                      angle_range: 270
+                      rotation: 135
+                      ticks:
+                        count: 65
+                        width: 4
+                        length: 25
+                        color: 0x30333B
+                        major:
+                          stride: 8
+                          width: 4
+                          length: 31
+                          color: 0x30333B
+                          label_gap: -500
+                      indicators:
+                        - tick_style:
+                            color_start: 0x2EA8FF
+                            color_end: 0xFF4D7E
+                            start_value: 0
+                            end_value: 63
+                            local: false
+                  indicator:
+                    bg_opa: 0
+                  bg_color: 0x15161A
+                  border_width: 2
+                  border_color: 0x2A2D35
+                  radius: 9999
+                  text_opa: 0%
+                  pad_all: 17
+              - label:
+                  id: climate_label_temp
+                  x: 203
+                  y: 390
+                  text: "20,4°"
+                  text_color: 0x30333B
+                  text_align: CENTER
+                  text_font: quicksand_30
+              - label:
+                  id: climate_label_warning
+                  x: 80
+                  y: 276
+                  width: 315
+                  height: 35
+                  hidden: true
+                  text: "E05 - Lage druk"
+                  text_color: 0xFF5100
+                  text_align: CENTER
+                  text_font: quicksand_24
+              - obj:
+                  id: climate_iconrow
+                  x: 0
+                  y: 100
+                  width: 160
+                  height: 40
+                  align: CENTER
+                  bg_color: 0xFFFFFF
+                  bg_opa: 0%
+                  border_width: 0
+                  border_color: 0xE0E0E0
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+                  widgets:
+                    - label:
+                        id: climate_icon_backupheater
+                        x: 0
+                        y: 0
+                        text: "\U000F0241"
+                        text_font: mdi_icons_40
+                        text_align: CENTER
+                        text_color: 0xFFCC00
+                    - label:
+                        id: climate_icon_legionella
+                        x: 80
+                        y: 0
+                        text: "\U000F0ED5"
+                        text_font: mdi_icons_40
+                        text_align: CENTER
+                        text_color: 0x1900FF
+                    - label:
+                        id: climate_icon_tapwater
+                        x: 80
+                        y: 0
+                        text: "\U000F1B29"
+                        text_font: mdi_icons_40
+                        text_align: CENTER
+                        text_color: 0x1900FF
+                    - label:
+                        id: climate_icon_compressor
+                        x: 120
+                        y: 0
+                        text: "\U000F1A44"
+                        text_font: mdi_icons_40
+                        text_align: CENTER
+                        text_color: 0xFFFFFF
+                    - label:
+                        id: climate_icon_heatcool
+                        x: 40
+                        y: 0
+                        width: 40
+                        height: 40
+                        text: "\U000F0238"
+                        text_font: mdi_icons_40
+                        text_align: CENTER
+                        text_color: 0xFF5100
+              - label:
+                  id: climate_label_setpoint
+                  x: 113
+                  y: 150
+                  width: 245
+                  height: 120
+                  text: "21,5"
+                  text_color: 0xFFFFFF
+                  text_align: CENTER
+                  text_font: quicksand_100b
+              - label:
+                  id: climate_icon_warning
+                  x: 215
+                  y: 90
+                  hidden: true
+                  text: "\U000F0026"
+                  text_font: mdi_icons_40
+                  text_align: CENTER
+                  text_color: 0xFF5100
+              - label:
+                  id: climate_label_instelling
+                  x: 165
+                  y: 130
+                  width: 140
+                  height: 35
+                  text: "Instelling"
+                  text_color: 0x30333B
+                  text_align: CENTER
+                  text_font: quicksand_24
 
-        - label:
-            id: thermostat_label_setpoint
-            x: 270
-            y: 176
-            width: 95
-            height: 55
-            text: "99,9"
-            text_color: 0xFFFFFF
-
-        - label:
-            id: label_icon_home
-            x: 208
-            y: 395
-            width: 65
-            height: 60
-            text: "\U000F0F54"
-            text_font: mdi_icons_63
-            text_align: CENTER
-            text_color: 0xFFFFFF
-
-    - id: canvas_5
-      bg_color: 0x283351
+    - id: canvas_12
+      bg_color: 0x111827
+      bg_opa: 100%
       pad_all: 0
       scrollbar_mode: "OFF"
       widgets:
         - obj:
-            id: overview_canvas
+            id: carrousel_background
             x: 0
             y: 0
-            width: 425
-            height: 425
+            width: 480
+            height: 480
             align: CENTER
-            bg_color: 0xFEF7FF
-            border_width: 0
-            border_opa: 0%
+            bg_color: 0x15161A
+            border_width: 5
+            border_color: 0x713FAD
             radius: 999
-            outline_width: 11
-            outline_color: 0xFEF7FF
-            outline_pad: 3
-            pad_all: 3
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: carrousel_bezel_1
+                  x: -5
+                  y: -5
+                  width: 470
+                  height: 470
+                  align: CENTER
+                  bg_color: 0x15161A
+                  border_width: 6
+                  border_color: 0x2A2D35
+                  radius: 32767
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+
+        - obj:
+            id: carrousel_bezel_2
+            x: 0
+            y: 0
+            width: 450
+            height: 450
+            align: CENTER
+            bg_color: 0x2A2D35
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2A2D35
+            radius: 999
+            pad_all: 0
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: overview_icon_errorwarning
-                  x: 190
-                  y: 224
-                  width: 40
-                  height: 40
-                  text: "\U000F0028"
-                  text_font: mdi_icons_40
+                  id: carrousel_title
+                  x: 0
+                  y: 25
+                  width: 190
+                  height: 45
+                  align: TOP_MID
+                  text: "MENU"
+                  text_color: 0x30333B
                   text_align: CENTER
-                  text_color: 0x000000
+                  text_font: quicksand_30
               - label:
-                  id: overview_icon_roomtemp
-                  x: 139
-                  y: 83
-                  width: 40
-                  height: 40
-                  text: "\U000F0F54"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x080808
-              - label:
-                  id: overview_label_roomtemp
-                  x: 186
-                  y: 83
-                  width: 115
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x080808
-                  text_align: LEFT
-                  text_font: quicksand_32
-              - label:
-                  id: overview_icon_setpoint
-                  x: 139
-                  y: 130
-                  width: 40
-                  height: 40
+                  id: carrousel_menu_icon_1
+                  x: 53
+                  y: 93
+                  width: 28
+                  height: 28
                   text: "\U000F0393"
-                  text_font: mdi_icons_40
+                  text_font: mdi_icons_28
                   text_align: CENTER
-                  text_color: 0x000000
+                  text_color: 0x30333B
               - label:
-                  id: overview_icon_tw
-                  x: 139
-                  y: 177
-                  width: 40
-                  height: 40
-                  text: "\U000F1B29"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x242424
-              - label:
-                  id: overview_label_tw
-                  x: 186
-                  y: 177
-                  width: 110
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x000000
+                  id: carrousel_menu_label_1
+                  x: 126
+                  y: 89
+                  width: 265
+                  height: 44
+                  text: "Temperatuur"
+                  text_color: 0x30333B
                   text_align: LEFT
-                  text_font: quicksand_32
+                  text_font: quicksand_28
               - label:
-                  id: overview_label_setpoint
-                  x: 186
-                  y: 130
-                  width: 120
-                  height: 40
-                  text: "99,9˚C"
-                  text_color: 0x000000
+                  id: carrousel_menu_icon_2
+                  x: 30
+                  y: 151
+                  width: 33
+                  height: 33
+                  text: "\U000F0A1D"
+                  text_font: mdi_icons_33
+                  text_align: CENTER
+                  text_color: 0x30333B
+              - label:
+                  id: carrousel_menu_label_2
+                  x: 126
+                  y: 145
+                  width: 305
+                  height: 44
+                  text: "Overzicht"
+                  text_color: 0x30333B
                   text_align: LEFT
-                  text_font: quicksand_32
+                  text_font: quicksand_33
               - label:
-                  id: overview_icon_mode_heatcooltapleg
-                  x: 146
-                  y: 224
+                  id: carrousel_menu_icon_3
+                  x: 17
+                  y: 208
                   width: 40
                   height: 40
-                  text: "\U000F0238"
+                  text: "\U000F0026"
                   text_font: mdi_icons_40
                   text_align: CENTER
-                  text_color: 0xFF0000
+                  text_color: 0x713FAD
               - label:
-                  id: overview_icon_link
-                  x: 240
-                  y: 224
-                  width: 40
-                  height: 40
-                  text: "\U000F0338"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
+                  id: carrousel_menu_label_3
+                  x: 126
+                  y: 201
+                  width: 305
+                  height: 44
+                  text: "Foutcodes"
+                  text_color: 0xFFFFFF
+                  text_align: LEFT
+                  text_font: quicksand_40
               - label:
-                  id: overview_icon_backupheater
-                  x: 171
-                  y: 224
-                  text: "\U000F140B"
-                  text_font: mdi_icons_15
+                  id: carrousel_menu_icon_4
+                  x: 24
+                  y: 262
+                  width: 33
+                  height: 33
+                  text: "\U000F0493"
+                  text_font: mdi_icons_33
                   text_align: CENTER
-                  text_color: 0x000000
+                  text_color: 0x30333B
               - label:
-                  id: overview_icon_cool
-                  x: 146
-                  y: 224
-                  hidden: true
-                  text: "\U000F0717"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
+                  id: carrousel_menu_label_4
+                  x: 126
+                  y: 256
+                  width: 305
+                  height: 44
+                  text: "Modus"
+                  text_color: 0x30333B
+                  text_align: LEFT
+                  text_font: quicksand_33
               - label:
-                  id: overview_icon_standby
-                  x: 146
-                  y: 224
-                  hidden: true
-                  text: "\U000F0906"
-                  text_font: mdi_icons_40
+                  id: carrousel_menu_icon_5
+                  x: 52
+                  y: 314
+                  width: 28
+                  height: 28
+                  text: "\U000F0337"
+                  text_font: mdi_icons_28
                   text_align: CENTER
-                  text_color: 0x000000
+                  text_color: 0x30333B
               - label:
-                  id: overview_icon_leg
-                  x: 146
-                  y: 224
-                  hidden: true
-                  text: "\U000F0ED5"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
-              - label:
-                  id: overview_icon_defrost
-                  x: 146
-                  y: 224
-                  hidden: true
-                  text: "\U000F12CB"
-                  text_font: mdi_icons_40
-                  text_align: CENTER
-                  text_color: 0x000000
+                  id: carrousel_menu_label_5
+                  x: 126
+                  y: 310
+                  width: 305
+                  height: 44
+                  text: "Koppelen"
+                  text_color: 0x30333B
+                  text_align: LEFT
+                  text_font: quicksand_28
 
-    - id: canvas_11
+        - label:
+            id: carrousel_instructie
+            x: 0
+            y: -48
+            width: 235
+            height: 27
+            align: BOTTOM_MID
+            text: "draai: kiezen • druk: openen"
+            text_color: 0x30333B
+            text_align: CENTER
+            text_font: quicksand_16
+
+    - id: canvas_13
       bg_color: 0x111827
       pad_all: 0
       scrollbar_mode: "OFF"
       widgets:
+        - obj:
+            id: overzicht_background
+            x: 0
+            y: 0
+            width: 480
+            height: 480
+            align: CENTER
+            bg_color: 0x15161A
+            border_width: 5
+            border_color: 0x713FAD
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: overzicht_bezel_1
+                  x: -5
+                  y: -5
+                  width: 470
+                  height: 470
+                  align: CENTER
+                  bg_color: 0x15161A
+                  border_width: 6
+                  border_color: 0x2A2D35
+                  radius: 32767
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+
+        - obj:
+            id: overzicht_bezel_2
+            x: 0
+            y: 0
+            width: 450
+            height: 450
+            align: CENTER
+            bg_color: 0x2A2D35
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2A2D35
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: overzicht_blok
+                  x: 0
+                  y: 0
+                  width: 280
+                  height: 280
+                  align: CENTER
+                  bg_color: 0xFFFFFF
+                  bg_opa: 0%
+                  border_width: 0
+                  border_color: 0xE0E0E0
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+                  widgets:
+                    - label:
+                        id: overzicht_label_buiten
+                        x: 0
+                        y: 0
+                        width: 120
+                        height: 40
+                        text: "Buiten"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_buiten_value
+                        x: 195
+                        y: 0
+                        width: 85
+                        height: 40
+                        text: "15°"
+                        text_color: 0x6177DB
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_buiten
+                        x: 0
+                        y: 38
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+                    - label:
+                        id: overzicht_label_aanvoer
+                        x: 0
+                        y: 40
+                        width: 190
+                        height: 40
+                        text: "Aanvoer"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_aanvoer_value
+                        x: 195
+                        y: 40
+                        width: 85
+                        height: 40
+                        text: "32,4°"
+                        text_color: 0xDB147E
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_aanvoer
+                        x: 0
+                        y: 78
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+                    - label:
+                        id: overzicht_label_retour
+                        x: 0
+                        y: 80
+                        width: 160
+                        height: 40
+                        text: "Retour"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_retour_value
+                        x: 195
+                        y: 80
+                        width: 85
+                        height: 40
+                        text: "30,8°"
+                        text_color: 0xCE22C8
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_retour
+                        x: 0
+                        y: 118
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+                    - label:
+                        id: overzicht_label_deltat
+                        x: 0
+                        y: 120
+                        width: 185
+                        height: 40
+                        text: "Delta T"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_deltat_value
+                        x: 195
+                        y: 120
+                        width: 85
+                        height: 40
+                        text: "1,6°"
+                        text_color: 0xFFFFFF
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_deltat
+                        x: 0
+                        y: 158
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+                    - label:
+                        id: overzicht_label_tapwater
+                        x: 0
+                        y: 160
+                        width: 175
+                        height: 40
+                        text: "Tapwater"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_tapwater_value
+                        x: 195
+                        y: 160
+                        width: 85
+                        height: 40
+                        text: "55°"
+                        text_color: 0xFF0000
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_tapwater
+                        x: 0
+                        y: 198
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+                    - label:
+                        id: overzicht_label_compfreq
+                        x: 0
+                        y: 200
+                        width: 185
+                        height: 40
+                        text: "Compressor"
+                        text_color: 0xFFFFFF
+                        text_align: LEFT
+                        text_font: quicksand_28
+                    - label:
+                        id: overzicht_label_compfreq_value
+                        x: 195
+                        y: 200
+                        width: 85
+                        height: 40
+                        text: "28 Hz"
+                        text_color: 0xFFFFFF
+                        text_align: RIGHT
+                        text_font: quicksand_28b
+                    - line:
+                        id: overzicht_line_compfreq
+                        x: 0
+                        y: 238
+                        width: 280
+                        height: 2
+                        points:
+                          - 0, 0
+                          - 280, 0
+                        line_color: 0x30333B
+              - label:
+                  id: overzicht_title
+                  x: 0
+                  y: 25
+                  width: 190
+                  height: 45
+                  align: TOP_MID
+                  text: "OVERZICHT"
+                  text_color: 0x30333B
+                  text_align: CENTER
+                  text_font: quicksand_30
+
+    - id: canvas_14
+      bg_color: 0x111827
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - obj:
+            id: modus_background
+            x: 0
+            y: 0
+            width: 480
+            height: 480
+            align: CENTER
+            bg_color: 0x15161A
+            border_width: 5
+            border_color: 0x713FAD
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: modus_bezel_1
+                  x: -5
+                  y: -5
+                  width: 470
+                  height: 470
+                  align: CENTER
+                  bg_color: 0x15161A
+                  border_width: 6
+                  border_color: 0x2A2D35
+                  radius: 32767
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+
+        - obj:
+            id: modus_bezel_2
+            x: 0
+            y: 0
+            width: 450
+            height: 450
+            align: CENTER
+            bg_color: 0x2A2D35
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2A2D35
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: modus_title
+                  x: 0
+                  y: 25
+                  width: 190
+                  height: 45
+                  align: TOP_MID
+                  text: "MODUS"
+                  text_color: 0x30333B
+                  text_align: CENTER
+                  text_font: quicksand_30
+
         - label:
-            id: pair_label_title
-            x: 205
-            y: 70
-            text: "Koppelen"
+            id: modus_icon
+            x: 0
+            y: 120
+            width: 120
+            height: 100
+            align: TOP_MID
+            text: "\U000F0238"
+            text_color: 0xFF5100
+            text_align: CENTER
+            text_font: mdi_icons_40
+        - label:
+            id: modus_label
+            x: 0
+            y: 240
+            width: 300
+            height: 55
+            align: TOP_MID
+            text: "Verwarmen"
             text_color: 0xFFFFFF
+            text_align: CENTER
+            text_font: quicksand_40
+
+    - id: canvas_15
+      bg_color: 0x111827
+      bg_opa: 100%
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - obj:
+            id: pair_background
+            x: 0
+            y: 0
+            width: 480
+            height: 480
+            align: CENTER
+            bg_color: 0x15161A
+            border_width: 5
+            border_color: 0x713FAD
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - obj:
+                  id: pair_bezel_1
+                  x: -5
+                  y: -5
+                  width: 470
+                  height: 470
+                  align: CENTER
+                  bg_color: 0x15161A
+                  border_width: 6
+                  border_color: 0x2A2D35
+                  radius: 32767
+                  pad_all: 0
+                  scrollbar_mode: "OFF"
+
+        - obj:
+            id: pair_bezel_2
+            x: 0
+            y: 0
+            width: 450
+            height: 450
+            align: CENTER
+            bg_color: 0x2A2D35
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2A2D35
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: pair_title
+                  x: 0
+                  y: 25
+                  width: 190
+                  height: 45
+                  align: TOP_MID
+                  text: "KOPPELEN"
+                  text_color: 0x30333B
+                  text_align: CENTER
+                  text_font: quicksand_30
 
         - label:
             id: pair_label_status
@@ -310,7 +844,7 @@ lvgl:
             x: 158
             y: 160
             width: 165
-            height: 51
+            height: 90
             options:
               - "Option 1"
               - "Option 2"
