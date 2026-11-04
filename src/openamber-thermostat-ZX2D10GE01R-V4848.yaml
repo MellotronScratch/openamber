@@ -89,7 +89,35 @@ light:
     name: "Status LEDs"
     default_transition_length: 300ms
     effects:
-      - addressable_lambda:       # vat dat volloopt: onderaan beginnen, aan beide kanten omhoog, bovenaan eindigen
+      - addressable_lambda:       # status: kleur van de modus, ademt als de compressor draait, knippert bij een fout
+          name: "Status"
+          update_interval: 40ms
+          lambda: |-
+            uint32_t nu = millis();
+            bool scherm = id(backlight).remote_values.is_on();
+            bool fout = id(remote_err).has_state() && id(remote_err).state;
+            bool waarsch = id(remote_warn).has_state() && id(remote_warn).state;
+            uint32_t k = 0;
+            float v = 0.0f;
+            if (fout || waarsch) {                         // ook als het scherm uit is
+              k = fout ? 0xFF1E00 : 0xFF8C00;              // rood of oranje
+              v = 0.2f + 0.8f * (0.5f + 0.5f * sinf(nu / 250.0f));
+              if (!scherm) v *= 0.5f;
+            } else if (scherm && id(link_ok)) {
+              if (id(mode_code) == 1) k = 0xFF5100;        // verwarmen
+              else if (id(mode_code) == 2) k = 0x2EA8FF;   // koelen; bij Uit blijft de ring donker
+              bool draait = id(rx_cf).has_state() && id(rx_cf).state > 0;
+              v = draait ? 0.3f + 0.7f * (0.5f + 0.5f * sinf(nu / 700.0f)) : 0.3f;
+            }
+            // korte flits na een draai of druk (bij modus Uit wit)
+            uint32_t sinds = nu - id(led_flits_ms);
+            if (scherm && sinds < 300) {
+              if (k == 0) k = 0xFFFFFF;
+              v = std::max(v, 1.0f - sinds / 300.0f);
+            }
+            Color c((uint8_t) (((k >> 16) & 0xFF) * v), (uint8_t) (((k >> 8) & 0xFF) * v), (uint8_t) ((k & 0xFF) * v));
+            for (int i = 0; i < it.size(); i++) it[i] = c;
+      - addressable_lambda:       # vat dat volloopt (niet meer in gebruik; vervangen door Status): onderaan beginnen, aan beide kanten omhoog, bovenaan eindigen
           name: "Vat"
           update_interval: 100ms
           lambda: |-

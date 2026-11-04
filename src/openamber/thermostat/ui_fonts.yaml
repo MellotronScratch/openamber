@@ -15,9 +15,11 @@ font:
     glyphs: [
       "\U000F0393",  # Thermostat      (menu: Temperatuur)
       "\U000F0A1D",  # Dashboard       (menu: Overzicht)
+      "\U000F00F0",  # Calendar clock  (menu: Schema)
       "\U000F0026",  # Alert           (menu: Foutcodes)
       "\U000F0493",  # Cog             (menu: Modus)
       "\U000F0337",  # Link            (menu: Koppelen)
+      "\U000F062E",  # Tune            (menu: Instellingen)
     ]
   - file:
       url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
@@ -27,9 +29,11 @@ font:
     glyphs: [
       "\U000F0393",  # Thermostat
       "\U000F0A1D",  # Dashboard
+      "\U000F00F0",  # Calendar clock
       "\U000F0026",  # Alert
       "\U000F0493",  # Cog
       "\U000F0337",  # Link
+      "\U000F062E",  # Tune
     ]
   # Rij 3 van de carrousel (geselecteerd). Dit font zet het script ook op climate_icon_heatcool,
   # dat vuur, sneeuwvlok, ontdooien of standby toont.
@@ -41,9 +45,11 @@ font:
     glyphs: [
       "\U000F0393",  # Thermostat
       "\U000F0A1D",  # Dashboard
+      "\U000F00F0",  # Calendar clock
       "\U000F0026",  # Alert
       "\U000F0493",  # Cog
       "\U000F0337",  # Link
+      "\U000F062E",  # Tune
       "\U000F0238",  # Fire (verwarmen)
       "\U000F0717",  # Snowflake (koelen)
       "\U000F12CB",  # Snowflake melt (ontdooien)
@@ -59,4 +65,15 @@ font:
       "\U000F0238",  # Fire (verwarmen)
       "\U000F0717",  # Snowflake (koelen)
       "\U000F0906",  # Power standby (uit)
+    ]
+  # Groot icoon op de foutcodespagina (widget fout_icon)
+  - file:
+      url: "https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/fonts/materialdesignicons-webfont.ttf"
+      type: web
+    id: fout_icons_80
+    size: 80
+    glyphs: [
+      "\U000F05E0",  # Check circle (geen foutcodes)
+      "\U000F0026",  # Alert (fout of waarschuwing)
+      "\U000F0338",  # Link off (geen verbinding met OpenAmber)
     ]

@@ -92,6 +92,10 @@ packet_transport:
         broadcast_id: cf
       - id: pt_errcode                      # eerste actieve fout of waarschuwing als getal
         broadcast_id: ec
+      - id: current_setpoint                # "Huidig setpoint": gewenste aanvoertemperatuur (stooklijn, handmatig of koelen)
+        broadcast_id: wsp                   # de thermostaat gebruikt hem voor de kleuren van aanvoer en retour
+      - id: pt_tijd                         # tijd: minuten sinds maandag 00:00 (voor het schema, ook zonder WiFi op de thermostaat)
+        broadcast_id: tm
 
     binary_sensors:
       # Bestaande binary sensors, rechtstreeks gedeeld
@@ -151,6 +155,17 @@ sensor:
     internal: true
     update_interval: 5s
     lambda: 'return (float) strtol(get_mac_address().substr(6).c_str(), nullptr, 16);'
+
+  # Tijd voor de thermostaat: minuten sinds maandag 00:00 (0 tot 10079), uit de klok my_time van OpenAmber.
+  # Geen geldige tijd: NAN, dan negeert de thermostaat hem.
+  - platform: template
+    id: pt_tijd
+    internal: true
+    update_interval: 30s
+    lambda: |-
+      auto nu = id(my_time).now();
+      if (!nu.is_valid()) return NAN;
+      return (float) (((nu.day_of_week + 5) % 7) * 1440 + nu.hour * 60 + nu.minute);
 
   # Koppelcode van de thermostaat (de code die daar is ingetypt): moet gelijk zijn aan de eigen code
   - platform: packet_transport
