@@ -1546,35 +1546,119 @@ lvgl:
             radius: 999
             pad_all: 0
             scrollbar_mode: "OFF"
-            widgets:
-              - label:
-                  id: inst_title
-                  x: 0
-                  y: 25
-                  width: 260
-                  height: 45
-                  align: TOP_MID
-                  text: "INSTELLINGEN"
-                  text_color: 0x30333B
-                  text_align: CENTER
-                  text_font: quicksand_30
+
+        - label:
+            id: inst_title
+            x: 0
+            y: 38
+            width: 300
+            align: TOP_MID
+            text: "INSTELLINGEN"
+            text_color: 0x8E94A3
+            text_align: CENTER
+            text_font: quicksand_24
 
         - obj:
             id: inst_rij_1
             x: 0
-            y: -102
-            width: 360
+            y: -136
+            width: 270
+            height: 64
+            align: CENTER
+            bg_color: 0x23262F
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2EA8FF
+            border_opa: 0%
+            radius: 32
+            opa: 30%
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            hidden: true
+            widgets:
+              - label:
+                  id: inst_rij_1_naam
+                  x: 22
+                  y: 0
+                  align: LEFT_MID
+                  text: ""
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_28b
+              - label:
+                  id: inst_rij_1_waarde
+                  x: -6
+                  y: 0
+                  align: RIGHT_MID
+                  text: ""
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_24
+                  bg_color: 0x2EA8FF
+                  bg_opa: 0%
+                  radius: 16
+                  pad_top: 2
+                  pad_bottom: 2
+                  pad_left: 16
+                  pad_right: 16
+
+        - obj:
+            id: inst_rij_2
+            x: 0
+            y: -68
+            width: 340
+            height: 64
+            align: CENTER
+            bg_color: 0x23262F
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2EA8FF
+            border_opa: 0%
+            radius: 32
+            opa: 60%
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            hidden: true
+            widgets:
+              - label:
+                  id: inst_rij_2_naam
+                  x: 22
+                  y: 0
+                  align: LEFT_MID
+                  text: ""
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_28b
+              - label:
+                  id: inst_rij_2_waarde
+                  x: -6
+                  y: 0
+                  align: RIGHT_MID
+                  text: ""
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_24
+                  bg_color: 0x2EA8FF
+                  bg_opa: 0%
+                  radius: 16
+                  pad_top: 2
+                  pad_bottom: 2
+                  pad_left: 16
+                  pad_right: 16
+
+        - obj:
+            id: inst_rij_3
+            x: 0
+            y: 0
+            width: 372
             height: 64
             align: CENTER
             bg_color: 0x23262F
             border_width: 2
             border_color: 0x2EA8FF
             radius: 32
+            opa: 100%
             pad_all: 0
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: inst_rij_1_naam
+                  id: inst_rij_3_naam
                   x: 22
                   y: 0
                   align: LEFT_MID
@@ -1582,7 +1666,7 @@ lvgl:
                   text_color: 0xE8EAF0
                   text_font: quicksand_28b
               - label:
-                  id: inst_rij_1_waarde
+                  id: inst_rij_3_waarde
                   x: -6
                   y: 0
                   align: RIGHT_MID
@@ -1598,10 +1682,10 @@ lvgl:
                   pad_right: 16
 
         - obj:
-            id: inst_rij_2
+            id: inst_rij_4
             x: 0
-            y: -34
-            width: 360
+            y: 68
+            width: 340
             height: 64
             align: CENTER
             bg_color: 0x23262F
@@ -1610,11 +1694,12 @@ lvgl:
             border_color: 0x2EA8FF
             border_opa: 0%
             radius: 32
+            opa: 60%
             pad_all: 0
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: inst_rij_2_naam
+                  id: inst_rij_4_naam
                   x: 22
                   y: 0
                   align: LEFT_MID
@@ -1622,7 +1707,7 @@ lvgl:
                   text_color: 0xE8EAF0
                   text_font: quicksand_28b
               - label:
-                  id: inst_rij_2_waarde
+                  id: inst_rij_4_waarde
                   x: -6
                   y: 0
                   align: RIGHT_MID
@@ -1638,10 +1723,10 @@ lvgl:
                   pad_right: 16
 
         - obj:
-            id: inst_rij_3
+            id: inst_rij_5
             x: 0
-            y: 34
-            width: 360
+            y: 136
+            width: 270
             height: 64
             align: CENTER
             bg_color: 0x23262F
@@ -1650,11 +1735,12 @@ lvgl:
             border_color: 0x2EA8FF
             border_opa: 0%
             radius: 32
+            opa: 30%
             pad_all: 0
             scrollbar_mode: "OFF"
             widgets:
               - label:
-                  id: inst_rij_3_naam
+                  id: inst_rij_5_naam
                   x: 22
                   y: 0
                   align: LEFT_MID
@@ -1662,51 +1748,11 @@ lvgl:
                   text_color: 0xE8EAF0
                   text_font: quicksand_28b
               - label:
-                  id: inst_rij_3_waarde
+                  id: inst_rij_5_waarde
                   x: -6
                   y: 0
                   align: RIGHT_MID
                   text: "Paars"
-                  text_color: 0xE8EAF0
-                  text_font: quicksand_24
-                  bg_color: 0x2EA8FF
-                  bg_opa: 0%
-                  radius: 16
-                  pad_top: 2
-                  pad_bottom: 2
-                  pad_left: 16
-                  pad_right: 16
-
-        - obj:
-            id: inst_rij_4
-            x: 0
-            y: 102
-            width: 360
-            height: 64
-            align: CENTER
-            bg_color: 0x23262F
-            bg_opa: 0%
-            border_width: 2
-            border_color: 0x2EA8FF
-            border_opa: 0%
-            radius: 32
-            pad_all: 0
-            scrollbar_mode: "OFF"
-            widgets:
-              - label:
-                  id: inst_rij_4_naam
-                  x: 22
-                  y: 0
-                  align: LEFT_MID
-                  text: "Terug"
-                  text_color: 0xE8EAF0
-                  text_font: quicksand_28b
-              - label:
-                  id: inst_rij_4_waarde
-                  x: -6
-                  y: 0
-                  align: RIGHT_MID
-                  text: ""
                   text_color: 0xE8EAF0
                   text_font: quicksand_24
                   bg_color: 0x2EA8FF
@@ -1725,6 +1771,179 @@ lvgl:
             height: 27
             align: BOTTOM_MID
             text: "draai: kiezen • druk: wijzigen"
+            text_color: 0x30333B
+            text_align: CENTER
+            text_font: quicksand_16
+    - id: update_canvas
+      bg_color: 0x111827
+      pad_all: 0
+      scrollbar_mode: "OFF"
+      widgets:
+        - obj:
+            id: update_background
+            x: 0
+            y: 0
+            width: 480
+            height: 480
+            align: CENTER
+            bg_color: 0xCE22C8
+            bg_grad_color: 0x1900FF
+            bg_grad_dir: VER
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+
+        - obj:
+            id: update_bezel_1
+            x: 0
+            y: 0
+            width: 470
+            height: 470
+            align: CENTER
+            bg_color: 0x15161A
+            border_width: 6
+            border_color: 0x2A2D35
+            radius: 32767
+            pad_all: 0
+            scrollbar_mode: "OFF"
+
+        - obj:
+            id: update_bezel_2
+            x: 0
+            y: 0
+            width: 450
+            height: 450
+            align: CENTER
+            bg_color: 0x2A2D35
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2A2D35
+            radius: 999
+            pad_all: 0
+            scrollbar_mode: "OFF"
+
+        - label:
+            id: update_title
+            x: 0
+            y: 38
+            width: 300
+            align: TOP_MID
+            text: "SOFTWARE-UPDATE"
+            text_color: 0x8E94A3
+            text_align: CENTER
+            text_font: quicksand_24
+
+        - label:
+            id: update_label_huidig
+            x: 0
+            y: -122
+            width: 300
+            align: CENTER
+            text: "Geïnstalleerd"
+            text_color: 0x8E94A3
+            text_align: CENTER
+            text_font: quicksand_16
+
+        - label:
+            id: update_huidig
+            x: 0
+            y: -94
+            width: 320
+            align: CENTER
+            text: "--"
+            text_color: 0xE8EAF0
+            text_align: CENTER
+            text_font: quicksand_24
+
+        - label:
+            id: update_label_nieuw
+            x: 0
+            y: -56
+            width: 300
+            align: CENTER
+            text: "Beschikbaar"
+            text_color: 0x8E94A3
+            text_align: CENTER
+            text_font: quicksand_16
+
+        - label:
+            id: update_nieuw
+            x: 0
+            y: -28
+            width: 320
+            align: CENTER
+            text: "--"
+            text_color: 0xE8EAF0
+            text_align: CENTER
+            text_font: quicksand_24
+
+        - label:
+            id: update_status
+            x: 0
+            y: 18
+            width: 300
+            align: CENTER
+            text: ""
+            text_color: 0x8E94A3
+            text_align: CENTER
+            text_font: quicksand_16
+
+        - obj:
+            id: update_knop
+            x: 0
+            y: 72
+            width: 300
+            height: 56
+            align: CENTER
+            bg_color: 0x23262F
+            border_width: 2
+            border_color: 0x2EA8FF
+            radius: 28
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: update_knop_label
+                  x: 0
+                  y: 0
+                  align: CENTER
+                  text: "Zoek naar update"
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_24
+
+        - obj:
+            id: update_terug
+            x: 0
+            y: 132
+            width: 220
+            height: 56
+            align: CENTER
+            bg_color: 0x23262F
+            bg_opa: 0%
+            border_width: 2
+            border_color: 0x2EA8FF
+            border_opa: 0%
+            radius: 28
+            pad_all: 0
+            scrollbar_mode: "OFF"
+            widgets:
+              - label:
+                  id: update_terug_label
+                  x: 0
+                  y: 0
+                  align: CENTER
+                  text: "Terug"
+                  text_color: 0xE8EAF0
+                  text_font: quicksand_24
+
+        - label:
+            id: update_hint
+            x: 0
+            y: -48
+            width: 235
+            height: 27
+            align: BOTTOM_MID
+            text: "draai: kiezen • druk: bevestigen"
             text_color: 0x30333B
             text_align: CENTER
             text_font: quicksand_16

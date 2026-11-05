@@ -11,7 +11,8 @@
 #   4 = Overzicht    overzicht_canvas  alleen lezen: temperaturen en compressor
 #   5 = Schema       schema_canvas     nachtverlaging per weekdag instellen
 #   6 = Foutcodes    fout_canvas       eerste actieve fout of waarschuwing met de tekst van OpenAmber
-#   7 = Instellingen inst_canvas       ledring, helderheid en kleurthema
+#   7 = Instellingen inst_canvas       carrousel: ledring, helderheid, thema, sensor, software-update
+#   8 = Update       update_canvas     software-update (de bron op GitHub volgt nog)
 #
 # Knop:  Temperatuur: korte druk = menu          Menu: korte druk = het gekozen item openen
 #        Modus: korte druk = bevestigen          Koppelen: korte druk = bevestigen
@@ -50,12 +51,15 @@ globals:
   - id: schema_waarde             # de waarde die gewijzigd wordt (minuten of graden)
     type: float
     initial_value: '0'
-  - id: inst_sel                  # selectie op de instellingenpagina: 0 = ledring, 1 = helderheid, 2 = thema, 3 = terug
+  - id: inst_sel                  # selectie op de instellingenpagina: 0 = ledring, 1 = helderheid, 2 = thema, 3 = sensor, 4 = update, 5 = terug
     type: int
     initial_value: '0'
   - id: inst_wijzig               # true zolang de helderheid of het thema met de knop wordt gewijzigd
     type: bool
     initial_value: 'false'
+  - id: update_sel                # selectie op de update-pagina: 0 = de knop, 1 = terug
+    type: int
+    initial_value: '0'
   - id: accent_kleur              # accentkleur van het thema (selectie, pil, melding)
     type: uint32_t
     initial_value: '0x2EA8FF'
@@ -76,6 +80,20 @@ select:
     on_value:
       then:
         - script.execute: thema_toepassen
+
+  # Welke kamertemperatuur het scherm toont: Tr (de sensor van OpenAmber in de kamer) of de eigen BME680.
+  # Alleen voor het scherm; OpenAmber regelt altijd op Tr.
+  - platform: template
+    id: kamer_bron
+    name: "Kamertemperatuur op het scherm"
+    options: ["Tr", "BME680"]
+    initial_option: "BME680"
+    optimistic: true
+    restore_value: true
+    entity_category: config
+    on_value:
+      then:
+        - script.execute: update_room_temp
 
 # Diagonaal kleurverloop voor de achtergrond van alle pagina's. De Designer kent alleen horizontaal
 # en verticaal; daarom staat het hier en wordt het bij het opstarten op de achtergronden gezet.
@@ -108,6 +126,7 @@ esphome:
         - lvgl.widget.update: {id: schema_background, bg_grad: achtergrond_verloop}
         - lvgl.widget.update: {id: fout_background, bg_grad: achtergrond_verloop}
         - lvgl.widget.update: {id: inst_background, bg_grad: achtergrond_verloop}
+        - lvgl.widget.update: {id: update_background, bg_grad: achtergrond_verloop}
         # Icoonfonts met alle glyphs die het script nodig heeft (zie ui_fonts.yaml)
         - lvgl.widget.update: {id: carrousel_menu_icon_1, text_font: menu_icons_28}
         - lvgl.widget.update: {id: carrousel_menu_icon_2, text_font: menu_icons_33}
@@ -229,13 +248,14 @@ script:
           toon(id(climate_label_warning), melding);
           toon(id(climate_icon_warning), melding);
 
-  # Kamertemperatuur (BME680) onderaan op de temperatuurpagina
+  # Kamertemperatuur onderaan op de temperatuurpagina: Tr van OpenAmber of de eigen BME680 (kamer_bron)
   - id: update_room_temp
     then:
       - lvgl.label.update:
           id: climate_label_temp
           text: !lambda |-
-            float x = id(bme_temp).state;
+            bool tr = id(kamer_bron).active_index().value_or(1) == 0;
+            float x = tr ? id(room_temperature).state : id(bme_temp).state;
             if (std::isnan(x)) return std::string("--");
             std::string s = str_sprintf("%.1f°", x);
             for (char &c : s) if (c == '.') c = ',';
@@ -437,14 +457,30 @@ script:
 
   - id: show_inst
     then:
+      - lambda: |-
+          if (id(knob_context) != 8) id(inst_sel) = 0;   // terug van de update-pagina: Software-update blijft gekozen
+          id(inst_wijzig) = false;
       - globals.set:
           id: knob_context
           value: '7'
-      - lambda: |-
-          id(inst_sel) = 0;
-          id(inst_wijzig) = false;
       - script.execute: inst_render
       - lvgl.page.show: inst_canvas
+
+  - id: show_update
+    then:
+      - globals.set:
+          id: knob_context
+          value: '8'
+      - lambda: |-
+          id(update_sel) = 0;
+          // Geïnstalleerde firmware: datum en tijd van het compileren
+          char b[Application::BUILD_TIME_STR_SIZE];
+          App.get_build_time_string(b);
+          lv_label_set_text(id(update_huidig), b);
+          lv_label_set_text(id(update_nieuw), "--");
+          lv_label_set_text(id(update_status), "");
+      - script.execute: update_render
+      - lvgl.page.show: update_canvas
 
   - id: show_schema
     then:
@@ -817,29 +853,34 @@ script:
           lv_label_set_text(id(fout_tekst), tekst);
 
   # ---------------------------------------------------------------------
-  # Instellingen-pagina: vier rijen (Ledring, Helderheid, Thema, Terug), de selectie loopt mee.
-  #   Ledring: druk = aan/uit       Helderheid en Thema: druk = wijzigen, draaien, druk = klaar
-  # De waarden zijn gewone entiteiten (ledring_aan, ledring_helderheid, thema), ook in de web-interface.
+  # Instellingen-pagina: carrousel zoals het schema (vijf rijen, de geselecteerde in rij 3) met
+  # Ledring, Helderheid, Thema, Sensor, Software-update en Terug.
+  #   Ledring en Sensor: druk = wisselen       Helderheid en Thema: druk = wijzigen, draaien, druk = klaar
+  #   Software-update: druk = de update-pagina openen
+  # De waarden zijn gewone entiteiten (ledring_aan, ledring_helderheid, thema, kamer_bron), ook in de web-interface.
   # ---------------------------------------------------------------------
   - id: inst_render
     then:
       - lambda: |-
+          static const char *namen[6] = {"Ledring", "Helderheid", "Thema", "Sensor", "Software-update", "Terug"};
           static const char *themas[5] = {"Paars", "Oranje", "Groen", "Blauw", "Grijs"};
-          lv_obj_t *rij[4]    = {id(inst_rij_1), id(inst_rij_2), id(inst_rij_3), id(inst_rij_4)};
-          lv_obj_t *naam[4]   = {id(inst_rij_1_naam), id(inst_rij_2_naam), id(inst_rij_3_naam), id(inst_rij_4_naam)};
-          lv_obj_t *waarde[4] = {id(inst_rij_1_waarde), id(inst_rij_2_waarde), id(inst_rij_3_waarde), id(inst_rij_4_waarde)};
-          lv_color_t a = lv_color_hex(id(accent_kleur));
+          lv_obj_t *rij[5]    = {id(inst_rij_1), id(inst_rij_2), id(inst_rij_3), id(inst_rij_4), id(inst_rij_5)};
+          lv_obj_t *naam[5]   = {id(inst_rij_1_naam), id(inst_rij_2_naam), id(inst_rij_3_naam), id(inst_rij_4_naam), id(inst_rij_5_naam)};
+          lv_obj_t *waarde[5] = {id(inst_rij_1_waarde), id(inst_rij_2_waarde), id(inst_rij_3_waarde), id(inst_rij_4_waarde), id(inst_rij_5_waarde)};
           int sel = id(inst_sel);
           char buf[16];
-          for (int r = 0; r < 4; r++) {
-            bool gek = (r == sel);
-            lv_obj_set_style_bg_opa(rij[r], gek ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
-            lv_obj_set_style_border_color(rij[r], a, 0);
-            lv_obj_set_style_border_opa(rij[r], gek ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
-            if (r == 0) lv_label_set_text(waarde[r], id(ledring_aan).state ? "Aan" : "Uit");
-            if (r == 1) { snprintf(buf, sizeof(buf), "%d%%", (int) lroundf(id(ledring_helderheid).state)); lv_label_set_text(waarde[r], buf); }
-            if (r == 2) lv_label_set_text(waarde[r], themas[std::min<size_t>(id(thema).active_index().value_or(0), 4)]);
-            if (r == 3) {                            // Terug: alleen een gecentreerde tekst
+          for (int r = 0; r < 5; r++) {
+            int i = sel + r - 2;                     // rij 3 (r = 2) is de geselecteerde
+            if (i < 0 || i > 5) { lv_obj_add_flag(rij[r], LV_OBJ_FLAG_HIDDEN); continue; }
+            lv_obj_clear_flag(rij[r], LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(naam[r], LV_OBJ_FLAG_HIDDEN);
+            lv_label_set_text(naam[r], namen[i]);
+            const char *w = "";
+            if (i == 0) w = id(ledring_aan).state ? "Aan" : "Uit";
+            if (i == 1) { snprintf(buf, sizeof(buf), "%d%%", (int) lroundf(id(ledring_helderheid).state)); w = buf; }
+            if (i == 2) w = themas[std::min<size_t>(id(thema).active_index().value_or(0), 4)];
+            if (i == 3) w = id(kamer_bron).active_index().value_or(1) == 0 ? "Tr" : "BME680";
+            if (i == 5) {                            // Terug: alleen een gecentreerde tekst
               lv_obj_add_flag(naam[r], LV_OBJ_FLAG_HIDDEN);
               lv_label_set_text(waarde[r], "Terug");
               lv_obj_set_style_bg_opa(waarde[r], LV_OPA_TRANSP, 0);
@@ -847,8 +888,9 @@ script:
               lv_obj_align(waarde[r], LV_ALIGN_CENTER, 0, 0);
               continue;
             }
-            bool wijzig = gek && id(inst_wijzig);
-            lv_obj_set_style_bg_color(waarde[r], a, 0);
+            bool wijzig = (r == 2) && id(inst_wijzig);
+            lv_label_set_text(waarde[r], w);
+            lv_obj_set_style_bg_color(waarde[r], lv_color_hex(id(accent_kleur)), 0);
             lv_obj_set_style_bg_opa(waarde[r], wijzig ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
             lv_obj_set_style_text_color(waarde[r], lv_color_hex(wijzig ? 0x0C0D10 : 0xE8EAF0), 0);
             lv_obj_align(waarde[r], LV_ALIGN_RIGHT_MID, wijzig ? -22 : -6, 0);   // -6: de label heeft zelf 16 px padding
@@ -862,7 +904,7 @@ script:
       - lambda: |-
           int sel = id(inst_sel);
           if (!id(inst_wijzig)) {
-            id(inst_sel) = std::max(0, std::min(3, sel + delta));
+            id(inst_sel) = std::max(0, std::min(5, sel + delta));
           } else if (sel == 1) {
             float v = std::max(5.0f, std::min(100.0f, id(ledring_helderheid).state + delta * 5.0f));
             id(ledring_helderheid).make_call().set_value(v).perform();
@@ -877,9 +919,31 @@ script:
       - lambda: |-
           int sel = id(inst_sel);
           if (sel == 0) id(ledring_aan).toggle();
-          else if (sel == 3) { id(inst_wijzig) = false; id(show_menu).execute(); }
+          else if (sel == 3) id(kamer_bron).make_call().select_next(true).perform();   // Tr <-> BME680
+          else if (sel == 4) id(show_update).execute();
+          else if (sel == 5) { id(inst_wijzig) = false; id(show_menu).execute(); }
           else id(inst_wijzig) = !id(inst_wijzig);
       - script.execute: inst_render
+
+  # ---------------------------------------------------------------------
+  # Update-pagina: geïnstalleerde versie, beschikbare versie en een knop.
+  # Er staat nog geen firmware op GitHub; de knop meldt dat er nog geen updatebron is.
+  # Later: update-component (http_request) met het manifest van de laatste GitHub-release.
+  # ---------------------------------------------------------------------
+  - id: update_render
+    then:
+      - lambda: |-
+          bool knop = id(update_sel) == 0;
+          lv_obj_set_style_bg_opa(id(update_knop), knop ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+          lv_obj_set_style_border_opa(id(update_knop), knop ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+          lv_obj_set_style_bg_opa(id(update_terug), knop ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
+          lv_obj_set_style_border_opa(id(update_terug), knop ? LV_OPA_TRANSP : LV_OPA_COVER, 0);
+
+  - id: update_druk
+    then:
+      - lambda: |-
+          if (id(update_sel) == 1) { id(show_inst).execute(); return; }
+          lv_label_set_text(id(update_status), "Nog geen updatebron ingesteld");
 
   # Kleurthema toepassen: achtergrondverloop van alle pagina's en de accentkleur
   - id: thema_toepassen
@@ -895,14 +959,18 @@ script:
           g->stops[0].color = lv_color_hex(van[t]);
           g->stops[1].color = lv_color_hex(naar[t]);
           id(accent_kleur) = accent[t];
-          lv_obj_t *bg[8] = {id(climate_background), id(carrousel_background), id(overzicht_background), id(modus_background),
-                             id(pair_background), id(schema_background), id(fout_background), id(inst_background)};
+          lv_obj_t *bg[9] = {id(climate_background), id(carrousel_background), id(overzicht_background), id(modus_background),
+                             id(pair_background), id(schema_background), id(fout_background), id(inst_background),
+                             id(update_background)};
           for (auto *o : bg) {
             lv_obj_set_style_bg_grad(o, g, 0);       // opnieuw zetten, zodat LVGL de nieuwe kleuren tekent
             lv_obj_invalidate(o);
           }
           lv_color_t a = lv_color_hex(accent[t]);
           lv_obj_set_style_border_color(id(schema_rij_3), a, 0);
+          lv_obj_set_style_border_color(id(inst_rij_3), a, 0);
+          lv_obj_set_style_border_color(id(update_knop), a, 0);
+          lv_obj_set_style_border_color(id(update_terug), a, 0);
           lv_obj_set_style_bg_color(id(schema_toast), a, 0);
           lv_obj_set_style_border_color(id(pair_roller)->obj, a, LV_PART_SELECTED);
       - script.execute: schema_render
@@ -995,6 +1063,14 @@ script:
                 lv_roller_set_selected(r, sel, LV_ANIM_ON);
 
       # 4 = Overzicht: alleen lezen, draaien doet niets
+
+      # 8 = Update: kiezen tussen de knop en Terug
+      - if:
+          condition:
+            lambda: 'return id(knob_context) == 8;'
+          then:
+            - lambda: 'id(update_sel) = delta > 0 ? 1 : 0;'
+            - script.execute: update_render
 
       # 7 = Instellingen: kiezen, of de helderheid / het thema veranderen
       - if:

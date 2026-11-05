@@ -74,7 +74,7 @@ globals:
   - id: pending_mode              # modus voor het volgende commando; 3 = ongewijzigd laten
     type: int
     initial_value: '3'
-  - id: knob_context              # 0 = Temperatuur (setpoint instellen), 1 = menu, 2 = modus kiezen, 3 = koppelen, 4 = overzicht, 5 = schema, 6 = foutcodes, 7 = instellingen
+  - id: knob_context              # 0 = Temperatuur (setpoint instellen), 1 = menu, 2 = modus kiezen, 3 = koppelen, 4 = overzicht, 5 = schema, 6 = foutcodes, 7 = instellingen, 8 = update
     type: int
     initial_value: '0'
 
@@ -651,6 +651,7 @@ script:
             case 2: id(modus_apply).execute(); break;
             case 3: id(pair_confirm).execute(); break;
             case 7: id(inst_druk).execute(); break;
+            case 8: id(update_druk).execute(); break;
             case 5: id(schema_druk).execute(); break;
             default: id(show_menu).execute(); break;
           }
@@ -787,7 +788,7 @@ packet_transport:
         broadcast_id: cmd
 
 interval:
-  - interval: 15s                 # kamertemperatuur van de BME680 op de temperatuurpagina tonen
+  - interval: 15s                 # kamertemperatuur (Tr of BME680, zie kamer_bron) op de temperatuurpagina tonen
     then:
       - script.execute: update_room_temp
 
